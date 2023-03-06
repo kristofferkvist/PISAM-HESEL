@@ -33,7 +33,7 @@ class hesel : public PhysicsModel {
 public:
     hesel();
     uint64_t rhs_wall_time_not_including_neutrals{0};
-    
+
 protected:
     int init(bool restart);
     int rhs(BoutReal t);
@@ -271,7 +271,6 @@ private:
     int CalculateDiffusionCoeff();// De for full model
     int Calculate_uR(int c);// uR, resistive drift velocity
     int Calculate_uExB(); // uExB, ExB drift velocity
-    int PrintField(Field3D f);
  //******************************************************************************
 
     // Operators

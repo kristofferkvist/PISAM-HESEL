@@ -1383,8 +1383,6 @@ int hesel::RhsKineticPlasmaNeutralInteractionInit(BoutReal t){
      */
     TRACE("Kinetic Neutrals Init");
 		if (kinetic_plasma_neutral_interactions){
-                        //std::cout << "####################Printing from HESEL###################" << std::endl;
-    			//PrintField(ti);
 			kinetic_neutrals.RhsSend(t);
 		}
     return 0;
@@ -1861,25 +1859,8 @@ int hesel::sigma_adjust(Field3D &var, int region){
 
     return 0;
 }
-
-int hesel::PrintField(Field3D f){
-  int nx = kinetic_neutrals.loc_proc_nx + 2*kinetic_neutrals.mxg;
-  std::cout << "[";
-    for (int i = 0; i < nx; i++){
-      std::cout << "[";
-      for (int j = 0; j < kinetic_neutrals.loc_proc_nz; j++){
-        std::cout << f(i, 0, j) << " ";
-        if (j == kinetic_neutrals.loc_proc_nz-1){std::cout << "]" << std::endl;}
-      }
-    }
-  std::cout << "]" << std::endl;
-  return 0;
-}
-
-
 //******************************************************************************
 
-//BOUTMAIN(hesel);
 
 int main(int argc, char **argv) {
 	/* Split world communicator */
