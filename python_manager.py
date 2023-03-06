@@ -4,7 +4,6 @@ import sys, getopt
 import numpy as np
 from boututils.options import BOUTOptions
 from simulator import Simulator
-from initializer import Initializer
 from matplotlib import pyplot as plt
 import time
 from scipy.ndimage import fourier_gaussian

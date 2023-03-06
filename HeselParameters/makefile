@@ -5,5 +5,5 @@ MODULE_DIR  = ../HESEL-Common
 SUB_NAME	= HeselParameters
 TARGET		= sub
 
-BOUT_TOP = $(MY_HOME)/BOUT-dev
+#BOUT_TOP = $(MY_HOME)/BOUT-dev
 include $(BOUT_TOP)/make.config

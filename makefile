@@ -1,8 +1,3 @@
-# Find the home, since ~ does not work in general
-# shell runs a shell command
-# HOME	= $(shell echo ~)
-# BOUT_TOP = $(HOME)/Documents/DTU/BOUT-dev
-BOUT_TOP = /marconi/home/userexternal/kkvist00/BOUT-dev
 #BOUT_TOP = /home/kristoffer/BOUT-dev
 
 SOURCEC		=  hesel.cxx
@@ -12,3 +7,10 @@ DIRS	= HeselParameters Neutrals Parallel BoutFastOutput KineticNeutrals
 TARGET = hesel
 
 include $(BOUT_TOP)/make.config
+
+PISAM_setup: make_tables_main.py make_tables.py table_dictionary.py
+	python3 $<
+	python3 table_dictionary.py
+
+clean_tables:
+	rm input_data/*
