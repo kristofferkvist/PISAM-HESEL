@@ -37,5 +37,5 @@ To run PISAM-HESEL use mpirun -n number_of_cores_HESEL ./hesel : -n number_of_co
 This assumes you have a BOUT.inp file in the folder /data. If your BOUT.inp file is located elsewhere use the option -d 'path/to/BOUT.inp/dir'. This option should be used after the hesel AND! python executables.
 
 ### Setting of PISAM-HESEL in BOUT.inp
-Except for a flag called 
+To run PISAM-HESEL the switch kinetic_plasma_neutral_interactions in line 65 in BOUT.inp should be set to 1. All other setting are in the [kinetic_neutrals] part of BOUT.inp. The arrays of PISAM are preallocated, so if the inflow rate of neutrals is set too high you will cause an input out of bounds error. In this case go to the [kinetic_neutrals] part of BOUT.inp and lower the inflow rate or preallocate larger arrays. 
 
