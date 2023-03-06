@@ -20,7 +20,6 @@ public:
   int InitKineticNeutrals(bool restart);
 	int RhsSend(BoutReal t);
 	int RhsReceive();
-  //int RhsCommunicateRoutine(BoutReal t);
   //Electron sources
   Field3D Sn, Spe;
   //Ion sources
@@ -33,10 +32,7 @@ public:
   const Field3D &ti;                  //  Electron pressure
 	const Field3D &phi;                  //  Ion temperature
 	const Field2D &B;                  //  Electron pressure
-    //The following variables hold the size of each dimension per cpu not including guard cells.
-  int loc_proc_nx, loc_proc_ny, loc_proc_nz, N_per_proc;
-  //Number of gurd_cells
-  int mxg;
+
 private:
   int InitIntercommunicator();
   int Mpi_receive(double* buffer, Field3D buffer_field);
@@ -56,9 +52,9 @@ private:
 	BoutComm* boutcomm;
 	int local_rank, app_size;
   //The following variables hold the size of each dimension per cpu not including guard cells.
-  //int loc_proc_nx, loc_proc_ny, loc_proc_nz, N_per_proc;
+  int loc_proc_nx, loc_proc_ny, loc_proc_nz, N_per_proc;
   //Number of gurd_cells
-  //int mxg;
+  int mxg;
   bool run_flag{1}, step_kinetic{0};
   BoutReal step_starttime{0.0};
   BoutReal dt_min, t_end;

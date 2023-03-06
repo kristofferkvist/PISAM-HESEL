@@ -32,7 +32,6 @@ int KineticNeutrals::InitKineticNeutrals(bool restart){
     uSi.y = 0;
     uSi.z = 0;
     //uSi.setBoundary("dirichlet_o2(0.)");
-
     oci = hesel_para_.oci();
     rhos = hesel_para_.rhos();
 		//Allocate Buffer
@@ -58,7 +57,7 @@ int KineticNeutrals::InitKineticNeutrals(bool restart){
     Mpi_receive(recv_buf, Sux);
     Mpi_receive(recv_buf, Suz);
 		Mpi_receive(recv_buf, Spi);
-
+    //Monitor fields
     SAVE_REPEAT3(Sn,Spe,Spi);
   return 0;
 }
@@ -104,25 +103,6 @@ int KineticNeutrals::SendFieldsReceiveSources(){
 		return 0;
 }
 
-/*
-int KineticNeutrals::RhsCommunicateRoutine(BoutReal t){
-  if ((step_starttime+dt_min < t) or (t_end <= t)){
-    if (run_flag){
-      step_starttime = t;
-      if (local_rank == 0){
-        //std::cout << "###########################################Time passed:" << t << std::endl;
-        MPI_Bcast(&t, 1, MPI_DOUBLE, MPI_ROOT, intercomm);
-      }
-      SendFieldsReceiveSources();
-    }
-    if (t > t_end){
-      run_flag = 0;
-    }
-  }
-  return 0;
-}
-*/
-
 int KineticNeutrals::Rhs_calc_velocity_sources(){
   u_perp0_x  = -1/B*DDZ(phi);  // ExB drift, x-component
   u_perp0_z  =  1/B*DDX(phi);  //            z-component
@@ -139,15 +119,8 @@ int KineticNeutrals::RhsSend(BoutReal t){
       step_starttime = t;
       step_kinetic = 1;
       if (local_rank == 0){
-        //std::cout << "###########################################Time passed:" << t << std::endl;
         MPI_Bcast(&t, 1, MPI_DOUBLE, MPI_ROOT, intercomm);
       }
-      /*if (local_rank == 0){
-          std::cout << "###############Printing Te from KineticNeutrals##############" << std::endl;
-          PrintField(te);
-          std::cout << "###############Printing Ti from KineticNeutrals##############" << std::endl;
-          PrintField(ti);
-      }*/
       Mpi_send(send_buf, n);
   		Mpi_send(send_buf, te);
   		Mpi_send(send_buf, ti);
@@ -168,9 +141,6 @@ int KineticNeutrals::RhsReceive(){
     Mpi_receive(recv_buf, Suz);
 		Mpi_receive(recv_buf, Spi);
     Rhs_calc_velocity_sources();
-   //if (local_rank == 0){
-   //    PrintField(Spi);
-   //}
   }
   return 0;
 }

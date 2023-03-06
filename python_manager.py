@@ -60,10 +60,6 @@ def main(argv):
         if opt in ("-d"):
             optDIR = arg
 
-    #if (len(argv) > 0):
-    #    restart = (argv[0] == 'restart')
-    #else:
-    #    restart = False
 
     world_comm = MPI.COMM_WORLD
     rank = world_comm.Get_rank()
@@ -163,13 +159,10 @@ def main(argv):
         if (flag_initialized):
             simulator.initiate_from_files()
             simulator.domain.t = 0
-            #if not (np.array_equal(simulator.domain.n_mesh, n_init) and np.array_equal(simulator.domain.Te_mesh, Te_init) and np.array_equal(simulator.domain.Ti_mesh, Ti_init)):
-            #    raise Exception("#######################Initialization files does not correspond to initial fields in BOUT++####################")
         else:
             simulator.initiate_from_fields()
             simulator.domain.t = 0
 
-    #wall_times_init = simulator.domain.wall_times
     #***************************************************************************
     #Wrapper for send_source:
     def send_source_wrapper(dt):
@@ -199,6 +192,7 @@ def main(argv):
                 sub_comm.Reduce([np.reshape(s, (procs_cpp, data_per_proc)).astype(np.double), MPI.DOUBLE], [None, MPI.DOUBLE], op = MPI.SUM, root = 0)
         return
     #***************************************************************************
+
     t_old_new = np.zeros(2)
     if (restart):
         if not (simulator.domain.last_plasma_timestep_length > 0):
@@ -241,6 +235,7 @@ def main(argv):
             hist_atoms, _ = np.histogram(x_pos_atoms, bins=simulator.h_atoms.bin_edges_x)
             hist_atoms_cxed, _ = np.histogram(x_pos_atoms_cxed, bins=simulator.h_atoms.bin_edges_x)
             hist_molecules, _ =  np.histogram(x_pos_molecules, bins=simulator.h_molecules.bin_edges_x)
+            #Diagnnostics
             if (rank == 0):
                 sub_comm.Reduce([hist_atoms.astype(np.float32), MPI.FLOAT], [hist_buff_atom_density, MPI.FLOAT], op = MPI.SUM, root = 0)
                 sub_comm.Reduce([hist_atoms_cxed.astype(np.float32), MPI.FLOAT], [hist_buff_atom_density_cx, MPI.FLOAT], op = MPI.SUM, root = 0)
@@ -278,7 +273,6 @@ def main(argv):
             runtimes = runtimes + np.diff(times)
 
 #*****************************FINALIZING***************************************#
-
     if (rank == 0):
         dense_dat_atoms = super_particle_size*dense_dat_atoms/(simulator.Lz*simulator.domain.dx)
         dense_dat_atoms_cx = super_particle_size*dense_dat_atoms_cx/(simulator.Lz*simulator.domain.dx)
