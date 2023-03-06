@@ -3,6 +3,7 @@ import pickle
 import matplotlib.pyplot as plt
 import h5py
 from scipy.interpolate import interp1d
+import os
 from make_tables import Tables_1d
 from make_tables import Tables_2d
 from make_tables import Table_cx_sampling_3D
@@ -10,7 +11,11 @@ from make_tables import Tables_2d_T_n
 from make_tables import Table_simple
 from make_tables import Table_light_heavy_sampling_from_spline_clean
 
-data_folder = 'input_data/'
+path = 'input_data'
+isExist = os.path.exists(path)
+if not isExist:
+   os.makedirs(path)
+data_folder = path + '/'
 coef_folder = 'collision_data_for_tables/'
 mccc_fit_folder = coef_folder + 'MCCC-fits/'
 
@@ -103,7 +108,6 @@ def make_eff_molecule_ion_rate_table():
     effective_ion_rate_molecule_table = Tables_2d_T_n(0.1, 300, 1000, 5e+17, 1e+20, 1000, eff_ion_mol_sum_coefs, data_folder + 'effective_ion_rate_molecule')
     effective_ion_rate_molecule_table.calc_rate()
     effective_ion_rate_molecule_table.save_object()
-
 
 print("Making Fragment Energy Table for MID")
 make_fragment_energy_table_ass_ion()
