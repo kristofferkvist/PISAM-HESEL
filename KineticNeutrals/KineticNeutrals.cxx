@@ -107,8 +107,8 @@ int KineticNeutrals::Rhs_calc_velocity_sources(){
   u_perp0_x  = -1/B*DDZ(phi);  // ExB drift, x-component
   u_perp0_z  =  1/B*DDX(phi);  //            z-component
 
-  uSi.x =  Suz/n + u_perp0_z*Sn/n;
-  uSi.z = -Sux/n - u_perp0_x*Sn/n;
+  uSi.x =  Suz/n - u_perp0_z*Sn/n;
+  uSi.z = -Sux/n + u_perp0_x*Sn/n;
   //uSi.applyBoundary();
   return 0;
 }
