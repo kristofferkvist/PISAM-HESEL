@@ -1,15 +1,19 @@
-from mpi4py import MPI
+#Standard Libraries
 import os
 import sys, getopt
-import numpy as np
-from boututils.options import BOUTOptions
-from simulator import Simulator
-from matplotlib import pyplot as plt
-import time
-from scipy.ndimage import fourier_gaussian
-from datetime import datetime
 import netCDF4 as nc
-
+import numpy as np
+from matplotlib import pyplot as plt
+#MPI
+from mpi4py import MPI
+#Timing
+import time
+from datetime import datetime
+#BOUT utils
+from boututils.options import BOUTOptions
+#My Classes
+from parallel_lowpass import Parallel_lowpass
+from simulator import Simulator
 
 def convert_source_dims(s, dt, dx, dy, oci, rhos, n_particles):
     dv = dx*dy #z-dim is chosen to be one meter
@@ -29,9 +33,9 @@ def normalize_sources_p(sp, dt, dx, dy, oci, rhos, n0, Te0, n_particles):
     p0 = n0*Te0
     return sp/p0
 
-def send_source(intercomm, send_buf, n_procs, size):
+def send_source(intercomm, send_buf, procs_cpp, data_per_proc):
     #Send data using scatter
-    intercomm.Scatter([send_buf, MPI.DOUBLE], None, root = MPI.ROOT)
+    intercomm.Scatter([np.reshape(send_buf, (procs_cpp, data_per_proc)).astype(np.float64), MPI.DOUBLE], None, root = MPI.ROOT)
 
 def receive_field(sub_comm, intercomm, recv_buf):
     if (intercomm.Get_rank() == 0):
@@ -41,12 +45,6 @@ def receive_field(sub_comm, intercomm, recv_buf):
 
 def format_field(field, normalization, size_x, size_z):
     return np.reshape(field, [size_x,  size_z])*normalization
-
-
-def fourier_blur(img, sigma):
-    input_ = np.fft.fft2(img)
-    result = fourier_gaussian(input_, sigma=sigma)
-    return np.fft.ifft2(result).real
 
 #Read input file
 def main(argv):
@@ -118,18 +116,19 @@ def main(argv):
     data_per_proc = int(send_total/procs_cpp)
 
     #Initialize buffers
-    oci = np.array(0).astype(np.double)
-    rhos = np.array(0).astype(np.double)
-    t = np.array(0).astype(np.double)
+    oci = np.array(0).astype(np.float64)
+    rhos = np.array(0).astype(np.float64)
+    t = np.array(0).astype(np.float64)
     #Only rank zero collects the data to be send in the send buf.
     #Due to the lack of pointers in python all ranks recv field through
     #broadcasting on the sub communicator, and thus they all need recv_buf
-    if (rank == 0):
-        send_buf = np.empty([procs_cpp, data_per_proc]).astype(np.double)
-
-    recv_buf_n = np.empty(send_total).astype(np.double)
-    recv_buf_Te = np.empty(send_total).astype(np.double)
-    recv_buf_Ti = np.empty(send_total).astype(np.double)
+    send_buf = None
+    if rank == 0:
+        print("################################INITIATING SEND BUF######################################")
+        send_buf = np.empty((nx-2*mxg, nz)).astype(np.float64)
+    recv_buf_n = np.empty(send_total).astype(np.float64)
+    recv_buf_Te = np.empty(send_total).astype(np.float64)
+    recv_buf_Ti = np.empty(send_total).astype(np.float64)
     #ts = np.array([0])
     #***************************************************************************
     #Wrapper for format field
@@ -153,6 +152,7 @@ def main(argv):
     simulator = Simulator(data_folder, oci, rhos, rank, procs_python, n_init, Te_init, Ti_init, optDIR)
     n_std_blur_x = rhos*r_std_blur/simulator.domain.dx
     n_std_blur_y = rhos*r_std_blur/simulator.domain.dy
+    lowpasser = Parallel_lowpass(sub_comm, nx-2*mxg, nz, n_std_blur_x, n_std_blur_y)
     if (restart):
         simulator.restart()
     else:
@@ -165,7 +165,7 @@ def main(argv):
 
     #***************************************************************************
     #Wrapper for send_source:
-    def send_source_wrapper(dt):
+    def send_source_wrapper(dt, send_buf):
         #For both species the sources are ordered as: Particle, momentum_x, momentum_z, temperature.
         Sn_electron, Su_x_electron, Su_z_electron, SP_electron = simulator.get_sources_electrons()
         Sn_ion, Su_x_ion, Su_z_ion, SP_ion = simulator.get_sources_ions()
@@ -174,22 +174,23 @@ def main(argv):
         Su_x_ion = normalize_sources_u(Su_x_ion, dt, simulator.domain.dx, simulator.domain.dy, oci, rhos, n0, Te0, super_particle_size, simulator.domain.d_ion_mass)
         Su_z_ion = normalize_sources_u(Su_z_ion, dt, simulator.domain.dx, simulator.domain.dy, oci, rhos, n0, Te0, super_particle_size, simulator.domain.d_ion_mass)
         SP_ion = normalize_sources_p(SP_ion, dt, simulator.domain.dx, simulator.domain.dy, oci, rhos, n0, Te0, super_particle_size)
-        Sn_electron = fourier_blur(Sn_electron, n_std_blur_x)
-        SP_electron = fourier_blur(SP_electron, n_std_blur_x)
-        Su_x_ion = fourier_blur(Su_x_ion, n_std_blur_x)
-        Su_z_ion = fourier_blur(Su_z_ion, n_std_blur_x)
-        SP_ion = fourier_blur(SP_ion, n_std_blur_x)
+
         source_list = [Sn_electron, SP_electron, Su_x_ion, Su_z_ion, SP_ion]
         #Reducing all sources to send_buf of rank 0, and using rank 0 only
         #to communicate to hesel.
         for i in np.arange(len(source_list)):
             s = source_list[i]
-            if (rank == 0):
-                source_shape = s.shape
-                sub_comm.Reduce([np.reshape(s, (procs_cpp, data_per_proc)).astype(np.double), MPI.DOUBLE], [send_buf, MPI.DOUBLE], op = MPI.SUM, root = 0)
-                send_source(intercomm, send_buf, procs_cpp, data_per_proc)
+            if rank == 0:
+                sub_comm.Reduce([s.astype(np.float64), MPI.DOUBLE], [send_buf, MPI.DOUBLE], op = MPI.SUM, root = 0)
+                #fig, axs = plt.subplots(2, 1)
+                #axs[0].imshow(send_buf)
+                blurred_source = lowpasser.blur(send_buf)
+                #axs[1].imshow(blurred_source)
+                #plt.show()
+                send_source(intercomm, blurred_source, procs_cpp, data_per_proc)
             else:
-                sub_comm.Reduce([np.reshape(s, (procs_cpp, data_per_proc)).astype(np.double), MPI.DOUBLE], [None, MPI.DOUBLE], op = MPI.SUM, root = 0)
+                sub_comm.Reduce([s.astype(np.float64), MPI.DOUBLE], [None, MPI.DOUBLE], op = MPI.SUM, root = 0)
+                send_buf = lowpasser.blur(None)
         return
     #***************************************************************************
 
@@ -202,10 +203,10 @@ def main(argv):
         t_old_new[0] = start_time
         t_old_new[1] = start_time
         if (rank == 0):
-            intercomm.Bcast([np.array(start_time).astype(np.double), MPI.DOUBLE], root=MPI.ROOT)
-        send_source_wrapper(simulator.domain.last_plasma_timestep_length)
+            intercomm.Bcast([np.array(start_time).astype(np.float64), MPI.DOUBLE], root=MPI.ROOT)
+        send_source_wrapper(simulator.domain.last_plasma_timestep_length, send_buf)
     else:
-        send_source_wrapper(init_source_time/oci)
+        send_source_wrapper(init_source_time/oci, send_buf)
         t_old_new[0] = 0
         t_old_new[1] = 0
 
@@ -267,7 +268,7 @@ def main(argv):
         if (rank == 0):
             times[4] = time.time()
         #Calculate and return sources.
-        send_source_wrapper((t_old_new[1] - t_old_new[0])/oci)
+        send_source_wrapper((t_old_new[1] - t_old_new[0])/oci, send_buf)
         if (rank == 0):
             times[5] = time.time()
             runtimes = runtimes + np.diff(times)
