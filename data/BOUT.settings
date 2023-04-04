@@ -1,0 +1,277 @@
+datadir = data		# not used , from: 
+mxg = 2		# not used , from: data/BOUT.inp
+myg = 0		# not used , from: data/BOUT.inp
+nout = 3		# not used , from: data/BOUT.inp
+optionfile = BOUT.inp		# not used , from: 
+settingsfile = BOUT.settings		# not used , from: 
+t_end = timestep*nout		# not used , from: data/BOUT.inp
+timestep = 3		# not used , from: data/BOUT.inp
+
+[all]
+bndry_all = neumann		# not used , from: data/BOUT.inp
+scale = 0.0		# not used , from: data/BOUT.inp
+
+[fast_output]
+flushfrequency = 100		# not used , from: data/BOUT.inp
+type = monitor		# not used , from: data/BOUT.inp
+xpos0 = 0.2		# not used , from: data/BOUT.inp
+xpos1 = 0.3		# not used , from: data/BOUT.inp
+xpos2 = 0.4		# not used , from: data/BOUT.inp
+xpos3 = 0.5		# not used , from: data/BOUT.inp
+xpos4 = 0.6		# not used , from: data/BOUT.inp
+xpos5 = 0.7		# not used , from: data/BOUT.inp
+xpos6 = 0.8		# not used , from: data/BOUT.inp
+ypos0 = 0		# not used , from: data/BOUT.inp
+ypos1 = 0		# not used , from: data/BOUT.inp
+ypos2 = 0		# not used , from: data/BOUT.inp
+ypos3 = 0		# not used , from: data/BOUT.inp
+ypos4 = 0		# not used , from: data/BOUT.inp
+ypos5 = 0		# not used , from: data/BOUT.inp
+ypos6 = 0		# not used , from: data/BOUT.inp
+zpos0 = 0.5		# not used , from: data/BOUT.inp
+zpos1 = 0.5		# not used , from: data/BOUT.inp
+zpos2 = 0.5		# not used , from: data/BOUT.inp
+zpos3 = 0.5		# not used , from: data/BOUT.inp
+zpos4 = 0.5		# not used , from: data/BOUT.inp
+zpos5 = 0.5		# not used , from: data/BOUT.inp
+zpos6 = 0.5		# not used , from: data/BOUT.inp
+
+[hesel]
+a = 2		# not used , from: data/BOUT.inp
+bracket_method = 2		# not used , from: data/BOUT.inp
+bt = 1.11		# not used , from: data/BOUT.inp
+collisional_model = 2		# not used , from: data/BOUT.inp
+d_force = 2		# not used , from: data/BOUT.inp
+d_lcfs = 2		# not used , from: data/BOUT.inp
+d_wall = 2		# not used , from: data/BOUT.inp
+diffusion_coeff = 1		# not used , from: data/BOUT.inp
+edge_width = x_lcfs*mesh:lx		# not used , from: data/BOUT.inp
+floor_n = 0.005		# not used , from: data/BOUT.inp
+floor_pe = 0.000025		# not used , from: data/BOUT.inp
+floor_pi = 0.000025		# not used , from: data/BOUT.inp
+floor_profiles = false		# not used , from: data/BOUT.inp
+floor_time = 50		# not used , from: data/BOUT.inp
+force_profiles = true		# not used , from: data/BOUT.inp
+force_time = 50		# not used , from: data/BOUT.inp
+force_width = 0.5 * edge_width		# not used , from: data/BOUT.inp
+interchange_dynamics = true		# not used , from: data/BOUT.inp
+kinetic_plasma_neutral_interactions = 1		# not used , from: data/BOUT.inp
+lblob = -1		# not used , from: data/BOUT.inp
+lconn = 20		# not used , from: data/BOUT.inp
+mach = 0.5		# not used , from: data/BOUT.inp
+n0 = 1.85e+19		# not used , from: data/BOUT.inp
+neoclass_correction_factor = -1		# not used , from: data/BOUT.inp
+parallel_advection_damping = 3		# not used , from: data/BOUT.inp
+parallel_conduction = 1		# not used , from: data/BOUT.inp
+parallel_drift_wave = 1		# not used , from: data/BOUT.inp
+parallel_dynamics = true		# not used , from: data/BOUT.inp
+parallel_sheath_damping = 3		# not used , from: data/BOUT.inp
+perpend_heat_exchange = true		# not used , from: data/BOUT.inp
+perpend_viscous_heating = true		# not used , from: data/BOUT.inp
+perpendicular_dynamics = true		# not used , from: data/BOUT.inp
+plasma_neutral_interactions = 0		# not used , from: data/BOUT.inp
+q = 4.2		# not used , from: data/BOUT.inp
+qdelta_approx = 3		# not used , from: data/BOUT.inp
+reciprocal_approx = 3		# not used , from: data/BOUT.inp
+right_handed_coord = false		# not used , from: data/BOUT.inp
+rmajor = 0.88		# not used , from: data/BOUT.inp
+rminor = 0.225		# not used , from: data/BOUT.inp
+sol_width = (x_wall-x_lcfs)*mesh:lx		# not used , from: data/BOUT.inp
+static_plasma = 0		# not used , from: data/BOUT.inp
+te0 = 29.8		# not used , from: data/BOUT.inp
+ti0 = 29.8		# not used , from: data/BOUT.inp
+ti_over_te = 3		# not used , from: data/BOUT.inp
+wall_amp = 8		# not used , from: data/BOUT.inp
+x_lcfs = 0.40		# not used , from: data/BOUT.inp
+x_wall = 0.80		# not used , from: data/BOUT.inp
+xr = mesh:xl - edge_width		# not used , from: data/BOUT.inp
+z = 1		# not used , from: data/BOUT.inp
+z_eff = 1.2		# not used , from: data/BOUT.inp
+
+[init_n]
+function = 0.5 * (n_inner - n_bg) * (1 - tanh( (hesel:xr - x_shift_n)/step_width)) + n_bg		# not used , from: data/BOUT.inp
+n_bg = 0.1		# not used , from: data/BOUT.inp
+n_inner = 1.5		# not used , from: data/BOUT.inp
+scale = 1.0		# not used , from: data/BOUT.inp
+step_width = 10.		# not used , from: data/BOUT.inp
+x_shift_n = 2.93794		# not used , from: data/BOUT.inp
+
+[init_neutrals]
+k_proxy = 1e-14*hesel:n0/oci_proxy		# not used , from: data/BOUT.inp
+ncold_edge = ncoldconst*exp(sqrt(k_proxy*init_n:n_inner/neutrals:d_cold)*(hesel:xr - init_n:x_shift_n))		# not used , from: data/BOUT.inp
+ncold_init = 0.5*(1 - tanh( (hesel:xr - init_n:x_shift_n)/init_n:step_width))*ncold_edge + 0.5*(1 + tanh( (hesel:xr - init_n:x_shift_n)/init_n:step_width))*ncold_sol		# not used , from: data/BOUT.inp
+ncold_sol = ncoldconst*exp(sqrt(k_proxy*init_n:n_bg/neutrals:d_cold)*(hesel:xr - init_n:x_shift_n))		# not used , from: data/BOUT.inp
+ncoldconst = 1/(rhos_proxy*oci_proxy*hesel:n0)*neutrals:ncoldflux/(sqrt(k_proxy*init_n:n_bg/neutrals:d_cold) * exp(sqrt(k_proxy*init_n:n_bg/neutrals:d_cold)*mesh:lx*hesel:x_wall))		# not used , from: data/BOUT.inp
+nhot_init = 1e-3		# not used , from: data/BOUT.inp
+nwarm_init = 1e-3		# not used , from: data/BOUT.inp
+oci_proxy = 1e-19/1e-27		# not used , from: data/BOUT.inp
+rhos_proxy = sqrt(1/oci_proxy)		# not used , from: data/BOUT.inp
+
+[init_pe]
+edge_prof = 1 - line_slope * sigma_closed:function * hesel:xr		# not used , from: data/BOUT.inp
+function = (0.5 *(sqrt(pe_inner) - pe_bg) * (1 - tanh( (hesel:xr - x_shift_pe)/step_width)) + pe_bg) * edge_prof		# not used , from: data/BOUT.inp
+line_slope = (sqrt(pe_inner)-1)/hesel:edge_width		# not used , from: data/BOUT.inp
+pe_bg = 0.01		# not used , from: data/BOUT.inp
+pe_inner = 9.0		# not used , from: data/BOUT.inp
+scale = 1.0		# not used , from: data/BOUT.inp
+step_width = 10.		# not used , from: data/BOUT.inp
+x_shift_pe = -3.51585		# not used , from: data/BOUT.inp
+
+[init_pi]
+edge_prof = 1 - line_slope * sigma_closed:function * hesel:xr		# not used , from: data/BOUT.inp
+function = (0.5 *(sqrt(pi_inner) - pi_bg) * (1 - tanh( (hesel:xr - x_shift_pi)/step_width)) + pi_bg) * edge_prof		# not used , from: data/BOUT.inp
+line_slope = (sqrt(pi_inner)-1)/hesel:edge_width		# not used , from: data/BOUT.inp
+pi_bg = 0.01		# not used , from: data/BOUT.inp
+pi_inner = 9.0		# not used , from: data/BOUT.inp
+scale = 1.0		# not used , from: data/BOUT.inp
+step_width = 10.		# not used , from: data/BOUT.inp
+x_shift_pi = -3.51585		# not used , from: data/BOUT.inp
+
+[kinetic_neutrals]
+dt_min = 1		# not used , from: data/BOUT.inp
+flag_initialized = 0		# not used , from: data/BOUT.inp
+h_atom_injection_rate = 0		# not used , from: data/BOUT.inp
+h_atom_n_max = 150000		# not used , from: data/BOUT.inp
+h_atom_temperature = 1		# not used , from: data/BOUT.inp
+h_molecule_injection_rate = 0.25e+10		# not used , from: data/BOUT.inp
+h_molecule_n_max = 500000		# not used , from: data/BOUT.inp
+h_molecule_temperature = 0.3		# not used , from: data/BOUT.inp
+init_source_time = 1		# not used , from: data/BOUT.inp
+phys_injection_rate_molecules = 150e+19		# not used , from: data/BOUT.inp
+r_std_blur = 5		# not used , from: data/BOUT.inp
+step_length = 1		# not used , from: data/BOUT.inp
+wallabsorbtionfractionatom = 0.2		# not used , from: data/BOUT.inp
+wallabsorbtionfractionmolecule = 0.2		# not used , from: data/BOUT.inp
+
+[laplace]
+inner_boundary_flags = 0		# not used , from: data/BOUT.inp
+outer_boundary_flags = 3		# not used , from: data/BOUT.inp
+
+[lnn]
+bndry_xin = dirichlet_o2(log(init_n:n_inner))		# not used , from: data/BOUT.inp
+bndry_xout = neumann_o2(0.)		# not used , from: data/BOUT.inp
+function = log(init_n:function+seed_n:function)		# not used , from: data/BOUT.inp
+scale = 1.0		# not used , from: data/BOUT.inp
+
+[lnncold]
+bndry_xin = neumann_o2(0.)		# not used , from: data/BOUT.inp
+bndry_xout = dirichlet_o2(log(1.))		# not used , from: data/BOUT.inp
+function = log(init_neutrals:ncold_init)		# not used , from: data/BOUT.inp
+scale = 1.0		# not used , from: data/BOUT.inp
+
+[lnnhot]
+bndry_xin = neumann_o2(0.)		# not used , from: data/BOUT.inp
+bndry_xout = neumann_o2(0.)		# not used , from: data/BOUT.inp
+function = log(init_neutrals:nhot_init)		# not used , from: data/BOUT.inp
+scale = 1.0		# not used , from: data/BOUT.inp
+
+[lnnwarm]
+bndry_xin = neumann_o2(0.)		# not used , from: data/BOUT.inp
+bndry_xout = neumann_o2(0.)		# not used , from: data/BOUT.inp
+function = log(init_neutrals:nwarm_init)		# not used , from: data/BOUT.inp
+scale = 1.0		# not used , from: data/BOUT.inp
+
+[lnpe]
+bndry_xin = dirichlet_o2(log(init_pe:pe_inner))		# not used , from: data/BOUT.inp
+bndry_xout = neumann_o2(0.)		# not used , from: data/BOUT.inp
+function = log(init_pe:function)		# not used , from: data/BOUT.inp
+scale = 1.0		# not used , from: data/BOUT.inp
+
+[lnpi]
+bndry_xin = dirichlet_o2(log(init_pi:pi_inner))		# not used , from: data/BOUT.inp
+bndry_xout = neumann_o2(0.)		# not used , from: data/BOUT.inp
+function = log(init_pi:function)		# not used , from: data/BOUT.inp
+scale = 1.0		# not used , from: data/BOUT.inp
+
+[mesh]
+dx = lx/(nx-1-2*mxg)		# not used , from: data/BOUT.inp
+dy = 1.0		# not used , from: data/BOUT.inp
+dz = lz/(nz-1)		# not used , from: data/BOUT.inp
+lx = 140		# not used , from: data/BOUT.inp
+lz = 140		# not used , from: data/BOUT.inp
+nx = 32+2*mxg		# not used , from: data/BOUT.inp
+ny = 1		# not used , from: data/BOUT.inp
+nz = 32		# not used , from: data/BOUT.inp
+xl = x*(lx+2*mxg*dx)		# not used , from: data/BOUT.inp
+zl = z*lz		# not used , from: data/BOUT.inp
+
+[mesh:ddx]
+first = c4		# not used , from: data/BOUT.inp
+flux = u1		# not used , from: data/BOUT.inp
+second = c4		# not used , from: data/BOUT.inp
+upwind = w3		# not used , from: data/BOUT.inp
+
+[mesh:ddy]
+first = c4		# not used , from: data/BOUT.inp
+flux = u1		# not used , from: data/BOUT.inp
+second = c4		# not used , from: data/BOUT.inp
+upwind = w3		# not used , from: data/BOUT.inp
+
+[mesh:ddz]
+first = c4		# not used , from: data/BOUT.inp
+flux = u1		# not used , from: data/BOUT.inp
+second = c4		# not used , from: data/BOUT.inp
+upwind = w3		# not used , from: data/BOUT.inp
+
+[neutrals]
+atomicionization = true		# not used , from: data/BOUT.inp
+chargeexchange = true		# not used , from: data/BOUT.inp
+d_cold = 1		# not used , from: data/BOUT.inp
+d_hot = 1000		# not used , from: data/BOUT.inp
+d_warm = 100		# not used , from: data/BOUT.inp
+dissociation = true		# not used , from: data/BOUT.inp
+e = 1.60e-19		# not used , from: data/BOUT.inp
+elasticcollisions = false		# not used , from: data/BOUT.inp
+floor_neutral_density = 1e-9		# not used , from: data/BOUT.inp
+floor_neutral_profiles = true		# not used , from: data/BOUT.inp
+inputbcs = false		# not used , from: data/BOUT.inp
+local_diffusion = false		# not used , from: data/BOUT.inp
+m = 2*1.67e-27		# not used , from: data/BOUT.inp
+molecularionization = true		# not used , from: data/BOUT.inp
+ncoldflux = 1e21		# not used , from: data/BOUT.inp
+neutral_floor_time = 50		# not used , from: data/BOUT.inp
+neutraldynamics = 7		# not used , from: data/BOUT.inp
+sigma = 3.53e-20		# not used , from: data/BOUT.inp
+t_cold = 0.025		# not used , from: data/BOUT.inp
+t_hot = hesel:ti0		# not used , from: data/BOUT.inp
+t_warm = 2.		# not used , from: data/BOUT.inp
+wallabsorbtionfraction = 0.2		# not used , from: data/BOUT.inp
+
+[run]
+revision = ab69d52f362dcaaddb22f3bd3b16aa7bab924d84		# not used , from: 
+started = Tue Apr  4 19:42:58 2023
+		# not used , from: 
+version = 4.4.2		# not used , from: 
+
+[seed_n]
+function = pert_amp*(5 + mixmode(z)*mixmode(2*pi*x))		# not used , from: data/BOUT.inp
+pert_amp = 0.001		# not used , from: data/BOUT.inp
+pert_size = 5		# not used , from: data/BOUT.inp
+scale = 1.0		# not used , from: data/BOUT.inp
+xaxis = mesh:xl-hesel:force_width		# not used , from: data/BOUT.inp
+zaxis = mesh:zl-mesh:lz/2		# not used , from: data/BOUT.inp
+
+[sigma_closed]
+function = 0.5 * (1-tanh(hesel:xr/hesel:d_lcfs))		# not used , from: data/BOUT.inp
+scale = 1.0		# not used , from: data/BOUT.inp
+
+[sigma_force]
+function = 0.5 * (1-tanh((mesh:xl-hesel:force_width)/hesel:d_force))		# not used , from: data/BOUT.inp
+scale = 1.0		# not used , from: data/BOUT.inp
+
+[sigma_open]
+function = 0.5 * (1+tanh(hesel:xr/hesel:d_lcfs)) + hesel:wall_amp*0.5 * (1+tanh((hesel:xr-hesel:sol_width)/hesel:d_wall))		# not used , from: data/BOUT.inp
+scale = 1.0		# not used , from: data/BOUT.inp
+
+[solver]
+atol = 1.0e-10		# not used , from: data/BOUT.inp
+mxstep = 1000000		# not used , from: data/BOUT.inp
+rtol = 1.0e-5		# not used , from: data/BOUT.inp
+timestep = 1.		# not used , from: data/BOUT.inp
+type = pvode		# not used , from: data/BOUT.inp
+
+[vort]
+bndry_xin = dirichlet_o2(0.)		# not used , from: data/BOUT.inp
+bndry_xout = neumann_o2(0.)		# not used , from: data/BOUT.inp
+function = 0.		# not used , from: data/BOUT.inp
+scale = 1.0		# not used , from: data/BOUT.inp

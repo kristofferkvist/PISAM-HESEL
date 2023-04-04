@@ -10,9 +10,9 @@ mxg      = 2              # guard cell number in the boundary of local CPU
 #==============================================================================
 #==============================================================================
 [mesh]
-nx = 64+2*mxg           # internal grid points plus guard cells along x-axis
+nx = 32+2*mxg           # internal grid points plus guard cells along x-axis
 ny = 1                   # y is along magnetic field, set to 1
-nz = 64                 # internal grid points along z-axis
+nz = 32                 # internal grid points along z-axis
 
 Lx = 140                 # simulation length along x-axis
 Lz = 140                 # simulation length along z-axis
@@ -210,7 +210,7 @@ H_molecule_N_max          = 500000       #Maximum number of molecules.
 flag_initialized          = 0            #If 0 run initializer, else load initiated objects from files
 dt_min                    = 1          #Minimum timestep for kinetic neutral model
 step_length               = 1          #Step length for internal step of the kinetic neutral model in oci units
-r_std_blur                = 2            #standard deviation for blur expressed in rhos.
+r_std_blur                = 5            #standard deviation for blur expressed in rhos.
 init_source_time          = 1            #Time inter over which the sources for the first timestep in plasma sim is calculated on oci units
 wallAbsorbtionFractionAtom    = 0.2          # Fraction absorbed
 wallAbsorbtionFractionMolecule = 0.2
