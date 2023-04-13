@@ -35,7 +35,7 @@ public:
 
 private:
   int InitIntercommunicator();
-  int Mpi_receive(double* buffer, Field3D buffer_field);
+  int Mpi_receive(double* buffer, Field3D buffer_field, int root);
   int Mpi_send(double* buffer, Field3D buffer_field);
   int Allocate_buffers();
   int Get_ind_3D(int x, int y, int z);
@@ -50,7 +50,7 @@ private:
   BoutReal* recv_buf;
   BoutReal oci, rhos;
 	BoutComm* boutcomm;
-	int local_rank, app_size;
+	int local_rank, app_size, python_size;
   //The following variables hold the size of each dimension per cpu not including guard cells.
   int loc_proc_nx, loc_proc_ny, loc_proc_nz, N_per_proc;
   //Number of gurd_cells

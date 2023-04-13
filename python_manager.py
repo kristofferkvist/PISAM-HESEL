@@ -14,6 +14,22 @@ from boututils.options import BOUTOptions
 #My Classes
 from parallel_lowpass import Parallel_lowpass
 from simulator import Simulator
+from scipy.signal import convolve
+
+def build_gauss(rows, cols, std_rad, std_pol):
+    dist_1d_cols = np.arange(-int(cols/2), -int(cols/2)+cols)
+    hori_mat = np.power(np.tile(dist_1d_cols, (rows, 1)), 2)
+    dist_1d_rows = np.arange(-int(rows/2), -int(rows/2)+rows)
+    vert_mat = np.power(np.transpose(np.tile(dist_1d_rows, (cols, 1))), 2)
+    base_mat = hori_mat/(2*std_pol*std_pol) + vert_mat/(2*std_rad*std_rad)
+    gauss = np.exp(-base_mat)
+    return gauss/np.sum(gauss)
+
+def convolve_blur(img, kernel, std_rad, std_pol):
+    #Apply mirror padding to avoid edge losses
+    padded = np.pad(img, (((2.5*std_rad).astype(np.int32), (2.5*std_rad).astype(np.int32)), ((2.5*std_pol).astype(np.int32), (2.5*std_pol).astype(np.int32))), mode='symmetric')
+    #The "valid" option means that only values within the padding region is kept
+    return convolve(padded, kernel, mode='valid')
 
 def convert_source_dims(s, dt, dx, dy, oci, rhos, n_particles):
     dv = dx*dy #z-dim is chosen to be one meter
@@ -45,6 +61,8 @@ def receive_field(sub_comm, intercomm, recv_buf):
 
 def format_field(field, normalization, size_x, size_z):
     return np.reshape(field, [size_x,  size_z])*normalization
+
+
 
 #Read input file
 def main(argv):
@@ -107,6 +125,11 @@ def main(argv):
     Te0 = float(eval(hesel_dict['Te0']))
     Ti0 = float(eval(hesel_dict['Ti0']))
 
+    python_size = sub_comm.Get_size()
+
+    #Set number of source terms for blurring and intercommunicating
+    n_sources = 5
+
     #Check if nummber of processors is adequate.
     send_total = (nx-2*mxg)*ny*nz
     if (rank == 0):
@@ -123,7 +146,7 @@ def main(argv):
     #Due to the lack of pointers in python all ranks recv field through
     #broadcasting on the sub communicator, and thus they all need recv_buf
     send_buf = None
-    if rank == 0:
+    if rank < n_sources:
         print("################################INITIATING SEND BUF######################################")
         send_buf = np.empty((nx-2*mxg, nz)).astype(np.float64)
     recv_buf_n = np.empty(send_total).astype(np.float64)
@@ -150,9 +173,15 @@ def main(argv):
 
     #Initiate neutral simulator
     simulator = Simulator(data_folder, oci, rhos, rank, procs_python, n_init, Te_init, Ti_init, optDIR)
-    n_std_blur_x = rhos*r_std_blur/simulator.domain.dx
-    n_std_blur_y = rhos*r_std_blur/simulator.domain.dy
-    lowpasser = Parallel_lowpass(sub_comm, nx-2*mxg, nz, n_std_blur_x, n_std_blur_y)
+    n_std_blur_radial = rhos*r_std_blur/simulator.domain.dx
+    n_std_blur_poloidal = rhos*r_std_blur/simulator.domain.dy
+
+    if rank < n_sources:
+        std_radial = (2*np.round(n_std_blur_radial/2)).astype(np.int32)
+        std_poloidal = (2*np.round(n_std_blur_poloidal/2)).astype(np.int32)
+        kernel = build_gauss(5*std_radial+1, 5*std_poloidal+1, std_radial, std_poloidal)
+
+    #lowpasser = Parallel_lowpass(sub_comm, nx-2*mxg, nz, n_std_blur_x, n_std_blur_y)
     if (restart):
         simulator.restart()
     else:
@@ -178,6 +207,26 @@ def main(argv):
         source_list = [Sn_electron, SP_electron, Su_x_ion, Su_z_ion, SP_ion]
         #Reducing all sources to send_buf of rank 0, and using rank 0 only
         #to communicate to hesel.
+
+        #Reduce the source terms to each of the ranks responsible for performing blur
+        i = 0
+
+        while i < n_sources:
+            loop_size = np.min(np.array([n_sources-i, python_size]))
+            loop_end = i + loop_size
+            while i < loop_end:
+                s = source_list[i]
+                if rank == i%python_size:
+                    print("rank = " + str(i%python_size))
+                    sub_comm.Reduce([s.astype(np.float64), MPI.DOUBLE], [send_buf, MPI.DOUBLE], op = MPI.SUM, root = i%python_size)
+                else:
+                    sub_comm.Reduce([s.astype(np.float64), MPI.DOUBLE], [None, MPI.DOUBLE], op = MPI.SUM, root = i%python_size)
+                i = i+1
+            if rank < loop_size:
+                send_buf = convolve_blur(send_buf, kernel, std_radial, std_poloidal)
+                send_source(intercomm, send_buf, procs_cpp, data_per_proc)
+
+    """
         for i in np.arange(len(source_list)):
             s = source_list[i]
             if rank == 0:
@@ -191,7 +240,7 @@ def main(argv):
             else:
                 sub_comm.Reduce([s.astype(np.float64), MPI.DOUBLE], [None, MPI.DOUBLE], op = MPI.SUM, root = 0)
                 send_buf = lowpasser.blur(None)
-        return
+    """
     #***************************************************************************
 
     t_old_new = np.zeros(2)

@@ -25,6 +25,7 @@ KineticNeutrals::~KineticNeutrals(){
 
 int KineticNeutrals::InitKineticNeutrals(bool restart){
 		ReadKineticNeutralParams();
+
 		//Init source fields
 		Sn = 0, Spe = 0, Sux = 0, Suz = 0, Spi = 0;
     u_perp0_x = 0, u_perp0_z = 0;
@@ -52,11 +53,11 @@ int KineticNeutrals::InitKineticNeutrals(bool restart){
       MPI_Bcast(&step_starttime, 1, MPI_DOUBLE, 0, intercomm);
       t_end += step_starttime;
     }
-    Mpi_receive(recv_buf, Sn);
-		Mpi_receive(recv_buf, Spe);
-    Mpi_receive(recv_buf, Sux);
-    Mpi_receive(recv_buf, Suz);
-		Mpi_receive(recv_buf, Spi);
+    Mpi_receive(recv_buf, Sn, 0%python_size);
+		Mpi_receive(recv_buf, Spe, 1%python_size);
+    Mpi_receive(recv_buf, Sux, 2%python_size);
+    Mpi_receive(recv_buf, Suz, 3%python_size);
+		Mpi_receive(recv_buf, Spi, 4%python_size);
     //Monitor fields
     SAVE_REPEAT3(Sn,Spe,Spi);
   return 0;
@@ -72,10 +73,13 @@ int KineticNeutrals::ReadKineticNeutralParams(){
 }
 
 int KineticNeutrals::InitIntercommunicator(){
+    int world_size;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     sub_comm = BoutComm::get();
     MPI_Comm_size(sub_comm, &app_size);
     MPI_Intercomm_create(sub_comm, 0, MPI_COMM_WORLD, app_size, 1, &intercomm);
     MPI_Comm_rank(intercomm, &local_rank);
+    python_size = world_size-app_size;
     return 0;
 }
 
@@ -95,11 +99,11 @@ int KineticNeutrals::SendFieldsReceiveSources(){
 		Mpi_send(send_buf, n);
 		Mpi_send(send_buf, te);
 		Mpi_send(send_buf, ti);
-		Mpi_receive(recv_buf, Sn);
-		Mpi_receive(recv_buf, Spe);
-    Mpi_receive(recv_buf, Sux);
-    Mpi_receive(recv_buf, Suz);
-		Mpi_receive(recv_buf, Spi);
+		Mpi_receive(recv_buf, Sn, 0%python_size);
+		Mpi_receive(recv_buf, Spe, 1%python_size);
+    Mpi_receive(recv_buf, Sux, 2%python_size);
+    Mpi_receive(recv_buf, Suz, 3%python_size);
+		Mpi_receive(recv_buf, Spi, 4%python_size);
 		return 0;
 }
 
@@ -135,19 +139,20 @@ int KineticNeutrals::RhsSend(BoutReal t){
 int KineticNeutrals::RhsReceive(){
   if (step_kinetic){
     step_kinetic = 0;
-    Mpi_receive(recv_buf, Sn);
-		Mpi_receive(recv_buf, Spe);
-    Mpi_receive(recv_buf, Sux);
-    Mpi_receive(recv_buf, Suz);
-		Mpi_receive(recv_buf, Spi);
+    Mpi_receive(recv_buf, Sn, 0%python_size);
+		Mpi_receive(recv_buf, Spe, 1%python_size);
+    Mpi_receive(recv_buf, Sux, 2%python_size);
+    Mpi_receive(recv_buf, Suz, 3%python_size);
+		Mpi_receive(recv_buf, Spi, 4%python_size);
     Rhs_calc_velocity_sources();
   }
   return 0;
 }
 
 //Receive the input data from the remote group of the intercommunicator, and read the data into the relevant field.
-int KineticNeutrals:: Mpi_receive(double* buffer, Field3D input_field){
-	MPI_Scatter(NULL, 0, MPI_DOUBLE, buffer, N_per_proc, MPI_DOUBLE, 0, intercomm);
+int KineticNeutrals:: Mpi_receive(double* buffer, Field3D input_field, int root){
+  std::cout << "The Root for receive is: " << root << std::endl;
+	MPI_Scatter(NULL, 0, MPI_DOUBLE, buffer, N_per_proc, MPI_DOUBLE, root, intercomm);
 	for(int i = 0; i < loc_proc_nx; i++){
 		for(int j = 0; j < loc_proc_ny; j++){
 			for(int k = 0; k < loc_proc_nz; k++){

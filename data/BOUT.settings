@@ -133,12 +133,12 @@ flag_initialized = 0		# not used , from: data/BOUT.inp
 h_atom_injection_rate = 0		# not used , from: data/BOUT.inp
 h_atom_n_max = 150000		# not used , from: data/BOUT.inp
 h_atom_temperature = 1		# not used , from: data/BOUT.inp
-h_molecule_injection_rate = 0.25e+10		# not used , from: data/BOUT.inp
+h_molecule_injection_rate = 0.25e+9		# not used , from: data/BOUT.inp
 h_molecule_n_max = 500000		# not used , from: data/BOUT.inp
 h_molecule_temperature = 0.3		# not used , from: data/BOUT.inp
 init_source_time = 1		# not used , from: data/BOUT.inp
 phys_injection_rate_molecules = 150e+19		# not used , from: data/BOUT.inp
-r_std_blur = 5		# not used , from: data/BOUT.inp
+r_std_blur = 16		# not used , from: data/BOUT.inp
 step_length = 1		# not used , from: data/BOUT.inp
 wallabsorbtionfractionatom = 0.2		# not used , from: data/BOUT.inp
 wallabsorbtionfractionmolecule = 0.2		# not used , from: data/BOUT.inp
@@ -239,7 +239,7 @@ wallabsorbtionfraction = 0.2		# not used , from: data/BOUT.inp
 
 [run]
 revision = ab69d52f362dcaaddb22f3bd3b16aa7bab924d84		# not used , from: 
-started = Tue Apr  4 19:42:58 2023
+started = Wed Apr 12 23:26:28 2023
 		# not used , from: 
 version = 4.4.2		# not used , from: 
 
