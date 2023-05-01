@@ -20,31 +20,35 @@ public:
   int InitKineticNeutrals(bool restart);
 	int RhsSend(BoutReal t);
 	int RhsReceive();
-  //Electron sources
-  Field3D Sn, Spe;
-  //Ion sources
-  Field3D Sux, Suz, Spi;
-	Field3D u_perp0_x, u_perp0_z;
-	Vector3D uSi;                   // Leading order drifts
-  const HeselParameters &hesel_para_; //  Object holding HESEL collisional parameters
-  const Field3D &n;                   //  Plasma density
-  const Field3D &te;                  //  Ion temperature
-  const Field3D &ti;                  //  Electron pressure
-	const Field3D &phi;                  //  Ion temperature
-	const Field2D &B;                  //  Electron pressure
+
+	Field3D u0_x_ion, u0_z_ion, u0_x_electron, u0_z_electron;
+	//Electron sources
+	Field3D Sn, Spe;
+	//Ion sources
+	Field3D Sux, Suz, Spi;
+	Field3D u_E_x, u_E_z;
+	Vector3D uSi;                   // Leading order ion drifts due to neutrals
 
 private:
-  int InitIntercommunicator();
-  int Mpi_receive(double* buffer, Field3D buffer_field, int root);
-  int Mpi_send(double* buffer, Field3D buffer_field);
-  int Allocate_buffers();
-  int Get_ind_3D(int x, int y, int z);
-  int ReadKineticNeutralParams();
-  int SendFieldsReceiveSources();
+
+	const HeselParameters &hesel_para_; //  Object holding HESEL collisional parameters
+	const Field3D &n;                   //  Plasma density
+	const Field3D &te;                  //  Ion temperature
+	const Field3D &ti;                  //  Electron pressure
+	const Field3D &phi;                  //  Electric potential
+	const Field2D &B;                  //  Magnetic field
+
+	int InitIntercommunicator();
+	int Mpi_receive(double* buffer, Field3D buffer_field, int root);
+	int Mpi_send(double* buffer, Field3D buffer_field);
+	int Allocate_buffers();
+	int Get_ind_3D(int x, int y, int z);
+	int ReadKineticNeutralParams();
+	int Calculate_ion_fluid_speed();
 	int Rhs_calc_velocity_sources();
 	int PrintField(Field3D f);
 
-  //Variables supporting MPI intercommunicator use
+	//Variables supporting MPI intercommunicator
   MPI_Comm intercomm, sub_comm;
   BoutReal* send_buf;
   BoutReal* recv_buf;
@@ -58,4 +62,5 @@ private:
   bool run_flag{1}, step_kinetic{0};
   BoutReal step_starttime{0.0};
   BoutReal dt_min, t_end;
+
 };

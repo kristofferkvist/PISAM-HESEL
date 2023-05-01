@@ -1400,8 +1400,8 @@ int hesel::RhsKineticPlasmaNeutralInteractionFinal(){
 	    ddt_lnn  += kinetic_neutrals.Sn/n;
 	    ddt_lnpe += 2./3.*kinetic_neutrals.Spe/pe;
 			ddt_lnpi += 2./3.*kinetic_neutrals.Spi/pi - Div(pi*kinetic_neutrals.uSi)/pi - 2./3.*Div(kinetic_neutrals.uSi)
-	    	      - 2./3.*(kinetic_neutrals.u_perp0_x*kinetic_neutrals.Sux + kinetic_neutrals.u_perp0_z*kinetic_neutrals.Suz)/pi
-	    	      + 1./3.*kinetic_neutrals.Sn*(kinetic_neutrals.u_perp0_x*kinetic_neutrals.u_perp0_x + kinetic_neutrals.u_perp0_z*kinetic_neutrals.u_perp0_z)/pi
+	    	      - 2./3.*(kinetic_neutrals.u0_x_ion*kinetic_neutrals.Sux + kinetic_neutrals.u0_z_ion*kinetic_neutrals.Suz)/pi
+	    	      + 1./3.*kinetic_neutrals.Sn*(kinetic_neutrals.u0_x_ion*kinetic_neutrals.u0_x_ion + kinetic_neutrals.u0_z_ion*kinetic_neutrals.u0_z_ion)/pi
                       + 2./3.*Div(n*kinetic_neutrals.uSi);
 	    ddt_vort += Div(n*kinetic_neutrals.uSi);
 		}

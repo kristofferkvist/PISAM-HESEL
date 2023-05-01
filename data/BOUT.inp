@@ -210,8 +210,8 @@ H_molecule_N_max          = 500000       #Maximum number of molecules.
 flag_initialized          = 0            #If 0 run initializer, else load initiated objects from files
 dt_min                    = 1          #Minimum timestep for kinetic neutral model
 step_length               = 1          #Step length for internal step of the kinetic neutral model in oci units
-r_std_blur                = 16            #standard deviation for blur expressed in rhos.
-init_source_time          = 1            #Time inter over which the sources for the first timestep in plasma sim is calculated on oci units
+r_std_blur                = 10            #standard deviation for blur expressed in rhos.
+init_source_time          = 1            #Time inter over which the sources for the first timestep in plasma sim is calculated in oci units
 wallAbsorbtionFractionAtom    = 0.2          # Fraction absorbed
 wallAbsorbtionFractionMolecule = 0.2
 

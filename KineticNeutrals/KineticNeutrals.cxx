@@ -25,13 +25,12 @@ KineticNeutrals::~KineticNeutrals(){
 
 int KineticNeutrals::InitKineticNeutrals(bool restart){
 		ReadKineticNeutralParams();
-
-		//Init source fields
-		Sn = 0, Spe = 0, Sux = 0, Suz = 0, Spi = 0;
-    u_perp0_x = 0, u_perp0_z = 0;
     uSi.x = 0;
     uSi.y = 0;
     uSi.z = 0;
+		//Init source fields
+		Sn = 0, Spe = 0, Sux = 0, Suz = 0, Spi = 0;
+    u0_x_ion = 0, u0_z_ion = 0;
     //uSi.setBoundary("dirichlet_o2(0.)");
     oci = hesel_para_.oci();
     rhos = hesel_para_.rhos();
@@ -46,9 +45,12 @@ int KineticNeutrals::InitKineticNeutrals(bool restart){
       MPI_Bcast(&oci, 1, MPI_DOUBLE, MPI_ROOT, intercomm);
 			MPI_Bcast(&rhos, 1, MPI_DOUBLE, MPI_ROOT, intercomm);
 		}
+    Calculate_ion_fluid_speed();
     Mpi_send(send_buf, n);
     Mpi_send(send_buf, te);
     Mpi_send(send_buf, ti);
+    Mpi_send(send_buf, u0_x_ion);
+    Mpi_send(send_buf, u0_z_ion);
     if (restart){
       MPI_Bcast(&step_starttime, 1, MPI_DOUBLE, 0, intercomm);
       t_end += step_starttime;
@@ -95,24 +97,16 @@ int KineticNeutrals::Allocate_buffers(){
   return 0;
 }
 
-int KineticNeutrals::SendFieldsReceiveSources(){
-		Mpi_send(send_buf, n);
-		Mpi_send(send_buf, te);
-		Mpi_send(send_buf, ti);
-		Mpi_receive(recv_buf, Sn, 0%python_size);
-		Mpi_receive(recv_buf, Spe, 1%python_size);
-    Mpi_receive(recv_buf, Sux, 2%python_size);
-    Mpi_receive(recv_buf, Suz, 3%python_size);
-		Mpi_receive(recv_buf, Spi, 4%python_size);
-		return 0;
+int KineticNeutrals::Calculate_ion_fluid_speed(){
+  u0_x_ion = -1/B*DDZ(phi) - 1/B*DDZ(n*ti);
+  u0_z_ion= 1/B*DDX(phi) + 1/B*DDX(n*ti);
+  return 0;
 }
 
 int KineticNeutrals::Rhs_calc_velocity_sources(){
-  u_perp0_x  = -1/B*DDZ(phi);  // ExB drift, x-component
-  u_perp0_z  =  1/B*DDX(phi);  //            z-component
-
-  uSi.x =  Suz/n - u_perp0_z*Sn/n;
-  uSi.z = -Sux/n + u_perp0_x*Sn/n;
+  Calculate_ion_fluid_speed();
+  uSi.x =  Suz/n - u0_z_ion*Sn/n;
+  uSi.z = -Sux/n + u0_x_ion*Sn/n;
   //uSi.applyBoundary();
   return 0;
 }
@@ -128,6 +122,8 @@ int KineticNeutrals::RhsSend(BoutReal t){
       Mpi_send(send_buf, n);
   		Mpi_send(send_buf, te);
   		Mpi_send(send_buf, ti);
+      Mpi_send(send_buf, u0_x_ion);
+      Mpi_send(send_buf, u0_z_ion);
     }
     if (t > t_end){
       run_flag = 0;
@@ -151,7 +147,6 @@ int KineticNeutrals::RhsReceive(){
 
 //Receive the input data from the remote group of the intercommunicator, and read the data into the relevant field.
 int KineticNeutrals:: Mpi_receive(double* buffer, Field3D input_field, int root){
-  std::cout << "The Root for receive is: " << root << std::endl;
 	MPI_Scatter(NULL, 0, MPI_DOUBLE, buffer, N_per_proc, MPI_DOUBLE, root, intercomm);
 	for(int i = 0; i < loc_proc_nx; i++){
 		for(int j = 0; j < loc_proc_ny; j++){

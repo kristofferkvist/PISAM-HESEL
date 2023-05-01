@@ -1,100 +1,159 @@
-datadir = data		# not used , from: 
-mxg = 2		# not used , from: data/BOUT.inp
-myg = 0		# not used , from: data/BOUT.inp
-nout = 3		# not used , from: data/BOUT.inp
-optionfile = BOUT.inp		# not used , from: 
-settingsfile = BOUT.settings		# not used , from: 
-t_end = timestep*nout		# not used , from: data/BOUT.inp
-timestep = 3		# not used , from: data/BOUT.inp
+append = false		# type: bool, doc: Add new outputs to the end of existing files? If false, overwrite files.
+async_send = false		# type: bool, doc: Whether to use asyncronous MPI sends
+datadir = data		# type: string
+dump_format = nc		# type: string
+dump_on_restart = true		# type: bool, doc: Write initial state as time point 0?
+incintshear = false		# type: bool
+mxg = 2		# type: int, doc: Number of guard cells on each side in X
+myg = 0		# type: int, doc: Number of guard cells on each side in Y
+non_uniform = true		# type: bool
+nout = 3		# type: int, doc: Number of output steps
+optionfile = BOUT.inp		# type: string
+periodicx = false		# type: bool, doc: Make grid periodic in X?
+restart = false		# type: bool, doc: Load state from restart files?
+restart_format = nc		# type: string
+settingsfile = BOUT.settings		# type: string
+stopcheck = false		# type: bool, doc: Check if a file exists, and exit if it does.
+t_end = timestep*nout		# type: BoutReal
+timestep = 3		# type: BoutReal, doc: Output time step size
+twistshift = false		# type: bool, doc: Apply a Twist-Shift boundary using ShiftAngle?
+wall_limit = -1		# type: BoutReal, doc: Wall time limit in hours. By default (< 0), no limit
+zmax = 1		# type: BoutReal
+zmin = 0		# type: BoutReal
 
 [all]
 bndry_all = neumann		# not used , from: data/BOUT.inp
-scale = 0.0		# not used , from: data/BOUT.inp
+evolve_bndry = false		# type: bool
+function = 0.0		# type: string
+scale = 0.0		# type: BoutReal
 
 [fast_output]
-flushfrequency = 100		# not used , from: data/BOUT.inp
-type = monitor		# not used , from: data/BOUT.inp
-xpos0 = 0.2		# not used , from: data/BOUT.inp
-xpos1 = 0.3		# not used , from: data/BOUT.inp
-xpos2 = 0.4		# not used , from: data/BOUT.inp
-xpos3 = 0.5		# not used , from: data/BOUT.inp
-xpos4 = 0.6		# not used , from: data/BOUT.inp
-xpos5 = 0.7		# not used , from: data/BOUT.inp
-xpos6 = 0.8		# not used , from: data/BOUT.inp
-ypos0 = 0		# not used , from: data/BOUT.inp
-ypos1 = 0		# not used , from: data/BOUT.inp
-ypos2 = 0		# not used , from: data/BOUT.inp
-ypos3 = 0		# not used , from: data/BOUT.inp
-ypos4 = 0		# not used , from: data/BOUT.inp
-ypos5 = 0		# not used , from: data/BOUT.inp
-ypos6 = 0		# not used , from: data/BOUT.inp
-zpos0 = 0.5		# not used , from: data/BOUT.inp
-zpos1 = 0.5		# not used , from: data/BOUT.inp
-zpos2 = 0.5		# not used , from: data/BOUT.inp
-zpos3 = 0.5		# not used , from: data/BOUT.inp
-zpos4 = 0.5		# not used , from: data/BOUT.inp
-zpos5 = 0.5		# not used , from: data/BOUT.inp
-zpos6 = 0.5		# not used , from: data/BOUT.inp
+dump_ext = nc		# type: string
+enabled = true		# type: bool
+floats = false		# type: bool
+flush = true		# type: bool
+flushfrequency = 100		# type: int
+frequency_multiplier = 100		# type: int
+guards = true		# type: bool
+init_missing = false		# type: bool
+openclose = true		# type: bool
+parallel = false		# type: bool
+prefix = BOUT.fast		# type: string
+shiftinput = false		# type: bool
+shiftoutput = false		# type: bool
+type = monitor		# type: string
+xpos0 = 0.2		# type: BoutReal
+xpos1 = 0.3		# type: BoutReal
+xpos2 = 0.4		# type: BoutReal
+xpos3 = 0.5		# type: BoutReal
+xpos4 = 0.6		# type: BoutReal
+xpos5 = 0.7		# type: BoutReal
+xpos6 = 0.8		# type: BoutReal
+xpos7 = -1		# type: BoutReal
+ypos0 = 0		# type: BoutReal
+ypos1 = 0		# type: BoutReal
+ypos2 = 0		# type: BoutReal
+ypos3 = 0		# type: BoutReal
+ypos4 = 0		# type: BoutReal
+ypos5 = 0		# type: BoutReal
+ypos6 = 0		# type: BoutReal
+ypos7 = -1		# type: BoutReal
+zpos0 = 0.5		# type: BoutReal
+zpos1 = 0.5		# type: BoutReal
+zpos2 = 0.5		# type: BoutReal
+zpos3 = 0.5		# type: BoutReal
+zpos4 = 0.5		# type: BoutReal
+zpos5 = 0.5		# type: BoutReal
+zpos6 = 0.5		# type: BoutReal
+zpos7 = -1		# type: BoutReal
+
+[fft]
+fft_measure = false		# type: bool, doc: Perform speed measurements to optimise settings?
+fft_measurement_flag = estimate		# type: 20FFT_MEASUREMENT_FLAG, doc: Level speed measurements to optimise FFT settings: [estimate], measure, exhaustive
 
 [hesel]
-a = 2		# not used , from: data/BOUT.inp
-bracket_method = 2		# not used , from: data/BOUT.inp
-bt = 1.11		# not used , from: data/BOUT.inp
-collisional_model = 2		# not used , from: data/BOUT.inp
-d_force = 2		# not used , from: data/BOUT.inp
-d_lcfs = 2		# not used , from: data/BOUT.inp
-d_wall = 2		# not used , from: data/BOUT.inp
-diffusion_coeff = 1		# not used , from: data/BOUT.inp
-edge_width = x_lcfs*mesh:lx		# not used , from: data/BOUT.inp
-floor_n = 0.005		# not used , from: data/BOUT.inp
-floor_pe = 0.000025		# not used , from: data/BOUT.inp
-floor_pi = 0.000025		# not used , from: data/BOUT.inp
-floor_profiles = false		# not used , from: data/BOUT.inp
-floor_time = 50		# not used , from: data/BOUT.inp
-force_profiles = true		# not used , from: data/BOUT.inp
-force_time = 50		# not used , from: data/BOUT.inp
-force_width = 0.5 * edge_width		# not used , from: data/BOUT.inp
-interchange_dynamics = true		# not used , from: data/BOUT.inp
-kinetic_plasma_neutral_interactions = 1		# not used , from: data/BOUT.inp
-lblob = -1		# not used , from: data/BOUT.inp
-lconn = 20		# not used , from: data/BOUT.inp
-mach = 0.5		# not used , from: data/BOUT.inp
-n0 = 1.85e+19		# not used , from: data/BOUT.inp
-neoclass_correction_factor = -1		# not used , from: data/BOUT.inp
-parallel_advection_damping = 3		# not used , from: data/BOUT.inp
-parallel_conduction = 1		# not used , from: data/BOUT.inp
-parallel_drift_wave = 1		# not used , from: data/BOUT.inp
-parallel_dynamics = true		# not used , from: data/BOUT.inp
-parallel_sheath_damping = 3		# not used , from: data/BOUT.inp
-perpend_heat_exchange = true		# not used , from: data/BOUT.inp
-perpend_viscous_heating = true		# not used , from: data/BOUT.inp
-perpendicular_dynamics = true		# not used , from: data/BOUT.inp
-plasma_neutral_interactions = 0		# not used , from: data/BOUT.inp
-q = 4.2		# not used , from: data/BOUT.inp
-qdelta_approx = 3		# not used , from: data/BOUT.inp
-reciprocal_approx = 3		# not used , from: data/BOUT.inp
-right_handed_coord = false		# not used , from: data/BOUT.inp
-rmajor = 0.88		# not used , from: data/BOUT.inp
-rminor = 0.225		# not used , from: data/BOUT.inp
-sol_width = (x_wall-x_lcfs)*mesh:lx		# not used , from: data/BOUT.inp
-static_plasma = 0		# not used , from: data/BOUT.inp
-te0 = 29.8		# not used , from: data/BOUT.inp
-ti0 = 29.8		# not used , from: data/BOUT.inp
-ti_over_te = 3		# not used , from: data/BOUT.inp
-wall_amp = 8		# not used , from: data/BOUT.inp
-x_lcfs = 0.40		# not used , from: data/BOUT.inp
-x_wall = 0.80		# not used , from: data/BOUT.inp
-xr = mesh:xl - edge_width		# not used , from: data/BOUT.inp
-z = 1		# not used , from: data/BOUT.inp
-z_eff = 1.2		# not used , from: data/BOUT.inp
+a = 2		# type: BoutReal
+bracket_method = 2		# type: int
+bt = 1.11		# type: BoutReal
+collisional_model = 2		# type: int
+compact_output = false		# type: bool
+d_force = 2
+d_lcfs = 2
+d_wall = 2
+diag_particle_flux = false		# type: bool
+diag_thermal = 0		# type: int
+diagnostics = false		# type: bool
+diffusion_coeff = 1		# type: int
+double_curvature_coeff = false		# type: bool
+edge_width = x_lcfs*mesh:lx
+floor_n = 0.005		# type: BoutReal
+floor_pe = 0.000025		# type: BoutReal
+floor_pi = 0.000025		# type: BoutReal
+floor_profiles = false		# type: bool
+floor_time = 50		# type: BoutReal
+force_profiles = true		# type: bool
+force_time = 50		# type: BoutReal
+force_width = 0.5 * edge_width
+hyper_dc_n = 1		# type: BoutReal
+hyper_dc_pe = 1		# type: BoutReal
+hyper_dc_pi = 1		# type: BoutReal
+hyper_dc_vort = 1		# type: BoutReal
+hyper_order = 4		# type: int
+init_zero_potential = false		# type: bool
+interchange_dynamics = true		# type: bool
+invert_w_star = false		# type: bool
+kinetic_plasma_neutral_interactions = 1		# type: int
+lblob = -1		# type: BoutReal
+lc_from_grid = false		# type: bool
+lconn = 20		# type: Field2D
+mach = 0.5		# type: BoutReal
+n0 = 1.85e+19		# type: BoutReal
+neoclass_correction_factor = -1		# type: BoutReal
+parallel_advection_damping = 3		# type: int
+parallel_conduction = 1		# type: int
+parallel_drift_wave = 1		# type: int
+parallel_dynamics = true		# type: bool
+parallel_sheath_damping = 3		# type: int
+parallel_transport = false		# type: bool
+perpend_heat_exchange = true		# type: bool
+perpend_hyper_diffusion = false		# type: bool
+perpend_viscous_heating = true		# type: bool
+perpendicular_dynamics = true		# type: bool
+plasma_neutral_interactions = 0		# type: int
+q = 4.2		# type: BoutReal
+qdelta_approx = 3		# type: int
+rampup_init_prof = 0		# type: int
+rampup_init_time = 1000		# type: BoutReal
+rampup_ti0 = false		# type: bool
+rampup_ti0_timax = 29.8		# type: BoutReal
+rampup_ti0_time = 0		# type: BoutReal
+reciprocal_approx = 3		# type: int
+right_handed_coord = false		# type: bool
+rmajor = 0.88		# type: BoutReal
+rminor = 0.225		# type: BoutReal
+sol_width = (x_wall-x_lcfs)*mesh:lx
+static_plasma = 0		# type: int
+te0 = 29.8		# type: BoutReal
+test_blob = false		# type: bool
+test_blob_use_gen_vort = false		# type: bool
+test_laplace = false		# type: bool
+test_vort_cross_term = false		# type: bool
+ti0 = 29.8		# type: BoutReal
+ti_over_te = 3		# type: int
+wall_amp = 8
+x_lcfs = 0.40		# type: BoutReal
+x_wall = 0.80		# type: BoutReal
+xr = mesh:xl - edge_width
+z = 1		# type: BoutReal
+z_eff = 1.2		# type: BoutReal
 
 [init_n]
-function = 0.5 * (n_inner - n_bg) * (1 - tanh( (hesel:xr - x_shift_n)/step_width)) + n_bg		# not used , from: data/BOUT.inp
-n_bg = 0.1		# not used , from: data/BOUT.inp
-n_inner = 1.5		# not used , from: data/BOUT.inp
-scale = 1.0		# not used , from: data/BOUT.inp
-step_width = 10.		# not used , from: data/BOUT.inp
-x_shift_n = 2.93794		# not used , from: data/BOUT.inp
+function = 0.5 * (n_inner - n_bg) * (1 - tanh( (hesel:xr - x_shift_n)/step_width)) + n_bg		# type: string
+n_bg = 0.1
+n_inner = 1.5
+scale = 1.0		# type: BoutReal
+step_width = 10.
+x_shift_n = 2.93794
 
 [init_neutrals]
 k_proxy = 1e-14*hesel:n0/oci_proxy		# not used , from: data/BOUT.inp
@@ -108,27 +167,30 @@ oci_proxy = 1e-19/1e-27		# not used , from: data/BOUT.inp
 rhos_proxy = sqrt(1/oci_proxy)		# not used , from: data/BOUT.inp
 
 [init_pe]
-edge_prof = 1 - line_slope * sigma_closed:function * hesel:xr		# not used , from: data/BOUT.inp
-function = (0.5 *(sqrt(pe_inner) - pe_bg) * (1 - tanh( (hesel:xr - x_shift_pe)/step_width)) + pe_bg) * edge_prof		# not used , from: data/BOUT.inp
-line_slope = (sqrt(pe_inner)-1)/hesel:edge_width		# not used , from: data/BOUT.inp
-pe_bg = 0.01		# not used , from: data/BOUT.inp
-pe_inner = 9.0		# not used , from: data/BOUT.inp
-scale = 1.0		# not used , from: data/BOUT.inp
-step_width = 10.		# not used , from: data/BOUT.inp
-x_shift_pe = -3.51585		# not used , from: data/BOUT.inp
+edge_prof = 1 - line_slope * sigma_closed:function * hesel:xr
+function = (0.5 *(sqrt(pe_inner) - pe_bg) * (1 - tanh( (hesel:xr - x_shift_pe)/step_width)) + pe_bg) * edge_prof		# type: string
+line_slope = (sqrt(pe_inner)-1)/hesel:edge_width
+pe_bg = 0.01
+pe_inner = 9.0
+scale = 1.0		# type: BoutReal
+step_width = 10.
+x_shift_pe = -3.51585
 
 [init_pi]
-edge_prof = 1 - line_slope * sigma_closed:function * hesel:xr		# not used , from: data/BOUT.inp
-function = (0.5 *(sqrt(pi_inner) - pi_bg) * (1 - tanh( (hesel:xr - x_shift_pi)/step_width)) + pi_bg) * edge_prof		# not used , from: data/BOUT.inp
-line_slope = (sqrt(pi_inner)-1)/hesel:edge_width		# not used , from: data/BOUT.inp
-pi_bg = 0.01		# not used , from: data/BOUT.inp
-pi_inner = 9.0		# not used , from: data/BOUT.inp
-scale = 1.0		# not used , from: data/BOUT.inp
-step_width = 10.		# not used , from: data/BOUT.inp
-x_shift_pi = -3.51585		# not used , from: data/BOUT.inp
+edge_prof = 1 - line_slope * sigma_closed:function * hesel:xr
+function = (0.5 *(sqrt(pi_inner) - pi_bg) * (1 - tanh( (hesel:xr - x_shift_pi)/step_width)) + pi_bg) * edge_prof		# type: string
+line_slope = (sqrt(pi_inner)-1)/hesel:edge_width
+pi_bg = 0.01
+pi_inner = 9.0
+scale = 1.0		# type: BoutReal
+step_width = 10.
+x_shift_pi = -3.51585
+
+[input]
+transform_from_field_aligned = true		# type: bool
 
 [kinetic_neutrals]
-dt_min = 1		# not used , from: data/BOUT.inp
+dt_min = 1		# type: BoutReal
 flag_initialized = 0		# not used , from: data/BOUT.inp
 h_atom_injection_rate = 0		# not used , from: data/BOUT.inp
 h_atom_n_max = 150000		# not used , from: data/BOUT.inp
@@ -138,20 +200,33 @@ h_molecule_n_max = 500000		# not used , from: data/BOUT.inp
 h_molecule_temperature = 0.3		# not used , from: data/BOUT.inp
 init_source_time = 1		# not used , from: data/BOUT.inp
 phys_injection_rate_molecules = 150e+19		# not used , from: data/BOUT.inp
-r_std_blur = 16		# not used , from: data/BOUT.inp
+r_std_blur = 10		# not used , from: data/BOUT.inp
 step_length = 1		# not used , from: data/BOUT.inp
 wallabsorbtionfractionatom = 0.2		# not used , from: data/BOUT.inp
 wallabsorbtionfractionmolecule = 0.2		# not used , from: data/BOUT.inp
 
 [laplace]
-inner_boundary_flags = 0		# not used , from: data/BOUT.inp
-outer_boundary_flags = 3		# not used , from: data/BOUT.inp
+all_terms = true		# type: bool, doc: Include first derivative terms?
+async = true		# type: bool, doc: Use asyncronous MPI send?
+dst = false		# type: bool
+extra_yguards_lower = 0		# type: int
+extra_yguards_upper = 0		# type: int
+filter = 0		# type: BoutReal, doc: Fraction of Z modes to filter out. Between 0 and 1
+global_flags = 0		# type: int
+include_yguards = false		# type: bool, doc: Solve Laplacian in Y guard cells?
+inner_boundary_flags = 0		# type: int
+low_mem = false		# type: bool
+maxmode = 16		# type: int
+nonuniform = true		# type: bool, doc: Use non-uniform grid corrections? Default is the mesh setting.
+outer_boundary_flags = 3		# type: int
+type = cyclic		# type: string
 
 [lnn]
-bndry_xin = dirichlet_o2(log(init_n:n_inner))		# not used , from: data/BOUT.inp
-bndry_xout = neumann_o2(0.)		# not used , from: data/BOUT.inp
-function = log(init_n:function+seed_n:function)		# not used , from: data/BOUT.inp
-scale = 1.0		# not used , from: data/BOUT.inp
+bndry_xin = dirichlet_o2(log(init_n:n_inner))		# type: string
+bndry_xout = neumann_o2(0.)		# type: string
+evolve_bndry = false		# type: bool
+function = log(init_n:function+seed_n:function)		# type: string
+scale = 1.0		# type: BoutReal
 
 [lnncold]
 bndry_xin = neumann_o2(0.)		# not used , from: data/BOUT.inp
@@ -172,46 +247,58 @@ function = log(init_neutrals:nwarm_init)		# not used , from: data/BOUT.inp
 scale = 1.0		# not used , from: data/BOUT.inp
 
 [lnpe]
-bndry_xin = dirichlet_o2(log(init_pe:pe_inner))		# not used , from: data/BOUT.inp
-bndry_xout = neumann_o2(0.)		# not used , from: data/BOUT.inp
-function = log(init_pe:function)		# not used , from: data/BOUT.inp
-scale = 1.0		# not used , from: data/BOUT.inp
+bndry_xin = dirichlet_o2(log(init_pe:pe_inner))		# type: string
+bndry_xout = neumann_o2(0.)		# type: string
+evolve_bndry = false		# type: bool
+function = log(init_pe:function)		# type: string
+scale = 1.0		# type: BoutReal
 
 [lnpi]
-bndry_xin = dirichlet_o2(log(init_pi:pi_inner))		# not used , from: data/BOUT.inp
-bndry_xout = neumann_o2(0.)		# not used , from: data/BOUT.inp
-function = log(init_pi:function)		# not used , from: data/BOUT.inp
-scale = 1.0		# not used , from: data/BOUT.inp
+bndry_xin = dirichlet_o2(log(init_pi:pi_inner))		# type: string
+bndry_xout = neumann_o2(0.)		# type: string
+evolve_bndry = false		# type: bool
+function = log(init_pi:function)		# type: string
+scale = 1.0		# type: BoutReal
 
 [mesh]
-dx = lx/(nx-1-2*mxg)		# not used , from: data/BOUT.inp
-dy = 1.0		# not used , from: data/BOUT.inp
-dz = lz/(nz-1)		# not used , from: data/BOUT.inp
-lx = 140		# not used , from: data/BOUT.inp
-lz = 140		# not used , from: data/BOUT.inp
-nx = 32+2*mxg		# not used , from: data/BOUT.inp
-ny = 1		# not used , from: data/BOUT.inp
-nz = 32		# not used , from: data/BOUT.inp
-xl = x*(lx+2*mxg*dx)		# not used , from: data/BOUT.inp
+calcparallelslices_on_communicate = true		# type: bool
+dx = lx/(nx-1-2*mxg)
+dy = 1.0
+dz = lz/(nz-1)
+extrapolate_x = false		# type: bool
+extrapolate_y = false		# type: bool
+lx = 140
+lz = 140
+maxregionblocksize = 64		# type: int
+nx = 32+2*mxg
+ny = 1
+nz = 32
+paralleltransform = identity		# type: string
+staggergrids = false		# type: bool
+symmetricglobalx = true		# type: bool
+symmetricglobaly = true		# type: bool
+type = bout		# type: string
+xl = x*(lx+2*mxg*dx)
 zl = z*lz		# not used , from: data/BOUT.inp
 
 [mesh:ddx]
-first = c4		# not used , from: data/BOUT.inp
-flux = u1		# not used , from: data/BOUT.inp
-second = c4		# not used , from: data/BOUT.inp
-upwind = w3		# not used , from: data/BOUT.inp
+first = c4		# type: string
+flux = u1		# type: string
+second = c4		# type: string
+upwind = w3		# type: string
 
 [mesh:ddy]
-first = c4		# not used , from: data/BOUT.inp
-flux = u1		# not used , from: data/BOUT.inp
-second = c4		# not used , from: data/BOUT.inp
-upwind = w3		# not used , from: data/BOUT.inp
+first = c4		# type: string
+flux = u1		# type: string
+second = c4		# type: string
+upwind = w3		# type: string
 
 [mesh:ddz]
-first = c4		# not used , from: data/BOUT.inp
-flux = u1		# not used , from: data/BOUT.inp
-second = c4		# not used , from: data/BOUT.inp
-upwind = w3		# not used , from: data/BOUT.inp
+fft_filter = 0		# type: BoutReal
+first = c4		# type: string
+flux = u1		# type: string
+second = c4		# type: string
+upwind = w3		# type: string
 
 [neutrals]
 atomicionization = true		# not used , from: data/BOUT.inp
@@ -237,41 +324,83 @@ t_hot = hesel:ti0		# not used , from: data/BOUT.inp
 t_warm = 2.		# not used , from: data/BOUT.inp
 wallabsorbtionfraction = 0.2		# not used , from: data/BOUT.inp
 
+[output]
+enabled = true		# type: bool
+floats = false		# type: bool
+flush = true		# type: bool
+flushfrequency = 1		# type: int
+guards = true		# type: bool
+init_missing = false		# type: bool
+openclose = true		# type: bool
+parallel = false		# type: bool
+shiftinput = false		# type: bool
+shiftoutput = false		# type: bool
+
+[restart]
+enabled = true		# type: bool
+floats = false		# type: bool
+flush = true		# type: bool
+flushfrequency = 1		# type: int
+guards = true		# type: bool
+init_missing = false		# type: bool
+openclose = true		# type: bool
+parallel = false		# type: bool
+shiftinput = false		# type: bool
+shiftoutput = false		# type: bool
+
 [run]
+finished = Mon May  1 11:15:22 2023
+		# not used , from: 
 revision = ab69d52f362dcaaddb22f3bd3b16aa7bab924d84		# not used , from: 
-started = Wed Apr 12 23:26:28 2023
+run_id = 3e342811-83ed-4861-a8c6-06a6cc3cddd0		# not used , from: Solver
+run_restart_from = zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz		# not used , from: Solver
+started = Mon May  1 11:14:50 2023
 		# not used , from: 
 version = 4.4.2		# not used , from: 
 
 [seed_n]
-function = pert_amp*(5 + mixmode(z)*mixmode(2*pi*x))		# not used , from: data/BOUT.inp
-pert_amp = 0.001		# not used , from: data/BOUT.inp
+function = pert_amp*(5 + mixmode(z)*mixmode(2*pi*x))		# type: string
+pert_amp = 0.001
 pert_size = 5		# not used , from: data/BOUT.inp
-scale = 1.0		# not used , from: data/BOUT.inp
+scale = 1.0		# type: BoutReal
 xaxis = mesh:xl-hesel:force_width		# not used , from: data/BOUT.inp
 zaxis = mesh:zl-mesh:lz/2		# not used , from: data/BOUT.inp
 
 [sigma_closed]
-function = 0.5 * (1-tanh(hesel:xr/hesel:d_lcfs))		# not used , from: data/BOUT.inp
-scale = 1.0		# not used , from: data/BOUT.inp
+function = 0.5 * (1-tanh(hesel:xr/hesel:d_lcfs))		# type: string
+scale = 1.0		# type: BoutReal
 
 [sigma_force]
-function = 0.5 * (1-tanh((mesh:xl-hesel:force_width)/hesel:d_force))		# not used , from: data/BOUT.inp
-scale = 1.0		# not used , from: data/BOUT.inp
+function = 0.5 * (1-tanh((mesh:xl-hesel:force_width)/hesel:d_force))		# type: string
+scale = 1.0		# type: BoutReal
 
 [sigma_open]
-function = 0.5 * (1+tanh(hesel:xr/hesel:d_lcfs)) + hesel:wall_amp*0.5 * (1+tanh((hesel:xr-hesel:sol_width)/hesel:d_wall))		# not used , from: data/BOUT.inp
-scale = 1.0		# not used , from: data/BOUT.inp
+function = 0.5 * (1+tanh(hesel:xr/hesel:d_lcfs)) + hesel:wall_amp*0.5 * (1+tanh((hesel:xr-hesel:sol_width)/hesel:d_wall))		# type: string
+scale = 1.0		# type: BoutReal
 
 [solver]
-atol = 1.0e-10		# not used , from: data/BOUT.inp
-mxstep = 1000000		# not used , from: data/BOUT.inp
-rtol = 1.0e-5		# not used , from: data/BOUT.inp
+atol = 1.0e-10		# type: BoutReal
+is_nonsplit_model_diffusive = true		# type: bool, doc: If not a split operator, treat RHS as diffusive?
+mldq = 136		# type: int
+mlkeep = 0		# type: int
+mms = false		# type: bool
+mms_initialise = false		# type: bool
+monitor_timestep = false		# type: bool
+mudq = 136		# type: int
+mukeep = 0		# type: int
+mxstep = 1000000		# type: int
+nout = 3		# type: int, doc: Number of output steps. Overrides global setting.
+output_step = 3		# type: BoutReal, doc: Output time step size. Overrides global TIMESTEP setting.
+precon_dimens = 50		# type: int
+precon_tol = 0.0001		# type: BoutReal
+rtol = 1.0e-5		# type: BoutReal
 timestep = 1.		# not used , from: data/BOUT.inp
-type = pvode		# not used , from: data/BOUT.inp
+type = pvode		# type: string
+use_precon = false		# type: bool
 
 [vort]
-bndry_xin = dirichlet_o2(0.)		# not used , from: data/BOUT.inp
-bndry_xout = neumann_o2(0.)		# not used , from: data/BOUT.inp
-function = 0.		# not used , from: data/BOUT.inp
-scale = 1.0		# not used , from: data/BOUT.inp
+bndry_xin = dirichlet_o2(0.)		# type: string
+bndry_xout = neumann_o2(0.)		# type: string
+evolve_bndry = false		# type: bool
+function = 0.		# type: string
+scale = 1.0		# type: BoutReal
