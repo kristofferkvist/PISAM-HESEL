@@ -20,8 +20,8 @@ class Domain:
         self.r_minor = r_minor
         self.r_major = r_major
         self.n0 = n0
-        self.plasma_dim_x = plasma_dim_x
-        self.plasma_dim_y = plasma_dim_y
+        self.plasma_dim_x = int(plasma_dim_x)
+        self.plasma_dim_y = int(plasma_dim_y)
         self.electron_source_particle = np.zeros((plasma_dim_x, plasma_dim_y))
         self.electron_source_energy = np.zeros_like(self.electron_source_particle)
         self.ion_source_momentum_x = np.zeros_like(self.electron_source_particle)

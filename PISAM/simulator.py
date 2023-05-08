@@ -72,13 +72,45 @@ class Simulator():
 
     def initiate_recording(self):
         self.record_iter = 0
+        self.n_atoms = np.zeros((self.domain.plasma_dim_x, self.domain.plasma_dim_y)).astype(np.float32)
+        self.n_atoms_cxed = np.zeros((self.domain.plasma_dim_x, self.domain.plasma_dim_y)).astype(np.float32)
+        self.n_molecules = np.zeros((self.domain.plasma_dim_x, self.domain.plasma_dim_y)).astype(np.float32)
         if (self.rank == 0):
-            self.hist_buff_atom_density = np.empty(self.h_atoms.bin_edges_x.size-1).astype(np.float32)
-            self.hist_buff_atom_density_cx = np.empty(self.h_atoms.bin_edges_x.size-1).astype(np.float32)
-            self.hist_buff_molecule_density = np.empty(self.h_molecules.bin_edges_x.size-1).astype(np.float32)
-            self.dense_dat_atoms = np.zeros((self.nout, self.hist_buff_atom_density.size)).astype(np.float32)
-            self.dense_dat_atoms_cx = np.zeros((self.nout, self.hist_buff_atom_density_cx.size)).astype(np.float32)
-            self.dense_dat_molecules = np.zeros((self.nout, self.hist_buff_molecule_density.size)).astype(np.float32)
+            self.buff_atom_density = np.zeros((self.domain.plasma_dim_x, self.domain.plasma_dim_y)).astype(np.float32)
+            self.buff_atom_density_cx = np.zeros((self.domain.plasma_dim_x, self.domain.plasma_dim_y)).astype(np.float32)
+            self.buff_molecule_density = np.zeros((self.domain.plasma_dim_x, self.domain.plasma_dim_y)).astype(np.float32)
+            self.buff_atom_density_diff = np.zeros(self.domain.plasma_dim_x).astype(np.float32)
+            self.buff_atom_cx_density_diff = np.zeros(self.domain.plasma_dim_x).astype(np.float32)
+            self.buff_molecule_density_diff = np.zeros(self.domain.plasma_dim_x).astype(np.float32)
+            self.buff_atom_source = np.zeros(self.domain.plasma_dim_x).astype(np.float32)
+            self.buff_atom_cx_source = np.zeros(self.domain.plasma_dim_x).astype(np.float32)
+            self.buff_molecule_source = np.zeros(self.domain.plasma_dim_x).astype(np.float32)
+            self.n_atoms_x_before = np.zeros(self.domain.plasma_dim_x).astype(np.float32)
+            self.n_atoms_cxed_x_before = np.zeros(self.domain.plasma_dim_x).astype(np.float32)
+            self.n_molecules_x_before = np.zeros(self.domain.plasma_dim_x).astype(np.float32)
+            self.nc_dat = nc.Dataset(self.optDIR + '/neutral_diagnostics.nc', 'w', 'NETCDF4')
+            self.nc_dat.createDimension('x', self.domain.plasma_dim_x)
+            self.nc_dat.createDimension('y', self.domain.plasma_dim_y)
+            self.nc_dat.createDimension('t', self.nout)
+            self.nc_dat.createDimension('scalar', 1)
+
+            self.molecule_injection_rate_var = self.nc_dat.createVariable('molecule_injection_rate', 'float32', ('scalar', ))
+            self.molecule_injection_rate_var[0] = np.array(self.H_molecule_injection_rate).astype(np.float32)
+            self.weight_var = self.nc_dat.createVariable('weight', 'float32', ('scalar', ))
+            self.weight_var[0] = np.array(self.weight).astype(np.float32)
+            self.Ly_var = self.nc_dat.createVariable('Ly', 'float32', ('scalar', ))
+            self.Ly_var[0] = np.array(self.Ly).astype(np.float32)
+            self.step_length_var = self.nc_dat.createVariable('dt', 'float32', ('t', ))
+            self.n_atom_var = self.nc_dat.createVariable('n_atom_x_y_t', 'float32', ('t', 'x', 'y'))
+            self.n_atom_cx_var = self.nc_dat.createVariable('n_atom_cx_x_y_t', 'float32', ('t', 'x', 'y'))
+            self.n_molecule_var = self.nc_dat.createVariable('n_molecule_x_y_t', 'float32', ('t', 'x', 'y'))
+            self.n_atom_diff_var = self.nc_dat.createVariable('n_atom_x_diff', 'float32', ('t', 'x'))
+            self.n_atom_cx_diff_var = self.nc_dat.createVariable('n_atom_cx_x_diff', 'float32', ('t', 'x'))
+            self.n_molecule_diff_var = self.nc_dat.createVariable('n_molecule_x_diff', 'float32', ('t', 'x'))
+            self.n_atom_source_var = self.nc_dat.createVariable('n_atom_x_source', 'float32', ('t', 'x'))
+            self.n_atom_cx_source_var = self.nc_dat.createVariable('n_atom_cx_x_source', 'float32', ('t', 'x'))
+            self.n_molecule_source_var = self.nc_dat.createVariable('n_molecule_x_source', 'float32', ('t', 'x'))
+
 
     def set_fields(self, n, Te, Ti, u0_x_ion, u0_y_ion):
         self.domain.n_mesh = n
@@ -95,12 +127,17 @@ class Simulator():
 
     def sim_step(self, t_plasma):
         self.domain.set_sources_zero()
+        #######Diagnostics#########
+        self.h_molecules.Sn_this_step.fill(0)
+        self.h_atoms.Sn_this_step.fill(0)
+        self.h_atoms.Sn_this_step_cx.fill(0)
+        #######Diagnostics#########
         full_steps = np.floor((t_plasma - self.domain.t)/self.domain.step_length).astype(np.int32)
         t_remaining = t_plasma - self.domain.t - self.domain.step_length*full_steps
         self.domain.dt = t_remaining
         self.domain.t += self.domain.dt
         for s in self.species_list:
-            s.step_save()
+            s.step()
         self.domain.dt = self.domain.step_length
         for _ in np.arange(full_steps):
             self.domain.t += self.domain.dt
@@ -133,13 +170,13 @@ class Simulator():
         self.ny = ny #The axes are switched its confusing
         Lx = float(mesh_dict['Lx'])
         self.Lx = Lx*self.rhos
-        Lz = float(mesh_dict['Lx'])
-        self.Lz = Lz*self.rhos
+        Ly = float(mesh_dict['Lz'])
+        self.Ly = Ly*self.rhos
 
         self.x_min = 0
         self.x_max = self.Lx
         self.y_min = 0  #The axes are switched its confusing
-        self.y_max = self.Lz  #The axes are switched its confusing
+        self.y_max = self.Ly  #The axes are switched its confusing
 
         #Read options from mesh dictionary
         hesel_dict = myOpts.hesel
@@ -213,35 +250,79 @@ class Simulator():
         t_remaining = self.init_source_time - self.domain.step_length*full_steps
         self.domain.dt = t_remaining
         for s in self.species_list:
-            s.step_save()
+            s.step()
         self.domain.dt = self.domain.step_length
         for _ in np.arange(full_steps):
             for s in self.species_list:
                 s.step()
 
-#############################################IO OPERATIONS######################
-    def record(self, t):
-        if (t > (self.record_iter+1)*self.timestep):
-            x_pos_atoms = self.h_atoms.x[0:self.h_atoms.max_ind][self.h_atoms.active[0:self.h_atoms.max_ind]]
-            x_pos_atoms_cxed = self.h_atoms.x[0:self.h_atoms.max_ind][self.h_atoms.cxed[0:self.h_atoms.max_ind]]
-            x_pos_molecules = self.h_molecules.x[0:self.h_molecules.max_ind][self.h_molecules.active[0:self.h_molecules.max_ind]]
-            hist_atoms, _ = np.histogram(x_pos_atoms, bins=self.h_atoms.bin_edges_x)
-            hist_atoms_cxed, _ = np.histogram(x_pos_atoms_cxed, bins=self.h_atoms.bin_edges_x)
-            hist_molecules, _ =  np.histogram(x_pos_molecules, bins=self.h_molecules.bin_edges_x)
-            #Diagnnostics
-            if (self.rank == 0):
-                self.sub_comm.Reduce([hist_atoms.astype(np.float32), MPI.FLOAT], [self.hist_buff_atom_density, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([hist_atoms_cxed.astype(np.float32), MPI.FLOAT], [self.hist_buff_atom_density_cx, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([hist_molecules.astype(np.float32), MPI.FLOAT], [self.hist_buff_molecule_density, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.dense_dat_atoms[self.record_iter, :] = self.hist_buff_atom_density
-                self.dense_dat_atoms_cx[self.record_iter, :] = self.hist_buff_atom_density_cx
-                self.dense_dat_molecules[self.record_iter, :] = self.hist_buff_molecule_density
-            else:
-                self.sub_comm.Reduce([hist_atoms.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([hist_atoms_cxed.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([hist_molecules.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
-            self.record_iter = self.record_iter + 1
+    def get_density(self, species, active, output):
+        mi = species.max_ind
+        output.fill(0)
+        x_inds = species.plasma_inds_x[0:mi][active[0:mi]]
+        y_inds = species.plasma_inds_y[0:mi][active[0:mi]]
+        np.add.at(output, (x_inds, y_inds), species.percentage[0:mi][active[0:mi]])
 
+#############################################IO OPERATIONS######################
+    def record_before_step(self, t):
+        if (t > (self.record_iter+1)*self.timestep):
+            self.get_density(self.h_atoms, self.h_atoms.active, self.n_atoms)
+            self.get_density(self.h_atoms, self.h_atoms.cxed, self.n_atoms_cxed)
+            self.get_density(self.h_molecules, self.h_molecules.active, self.n_molecules)
+
+            if (self.rank == 0):
+                self.sub_comm.Reduce([self.n_atoms.astype(np.float32), MPI.FLOAT], [self.buff_atom_density, MPI.FLOAT], op = MPI.SUM, root = 0)
+                self.sub_comm.Reduce([self.n_atoms_cxed.astype(np.float32), MPI.FLOAT], [self.buff_atom_density_cx, MPI.FLOAT], op = MPI.SUM, root = 0)
+                self.sub_comm.Reduce([self.n_molecules.astype(np.float32), MPI.FLOAT], [self.buff_molecule_density, MPI.FLOAT], op = MPI.SUM, root = 0)
+
+                self.n_atoms_x_before = np.sum(self.buff_atom_density, axis = 1)
+                self.n_atoms_cxed_x_before = np.sum(self.buff_atom_density_cx, axis = 1)
+                self.n_molecules_x_before = np.sum(self.buff_molecule_density, axis = 1)
+
+                self.n_atom_var[self.record_iter, :, :] = self.weight*self.buff_atom_density/(self.Ly*self.domain.dx*self.domain.dy)
+                self.n_atom_cx_var[self.record_iter, :, :] = self.weight*self.buff_atom_density_cx/(self.Ly*self.domain.dx*self.domain.dy)
+                self.n_molecule_var[self.record_iter, :, :] = self.weight*self.buff_molecule_density/(self.Ly*self.domain.dx*self.domain.dy)
+            else:
+                self.sub_comm.Reduce([self.n_atoms.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+                self.sub_comm.Reduce([self.n_atoms_cxed.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+                self.sub_comm.Reduce([self.n_molecules.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+            self.n_atoms.fill(0)
+            self.n_atoms_cxed.fill(0)
+            self.n_molecules.fill(0)
+
+    def record_after_step(self, t, step_length):
+        if (t > (self.record_iter+1)*self.timestep):
+            self.get_density(self.h_atoms, self.h_atoms.active, self.n_atoms)
+            self.get_density(self.h_atoms, self.h_atoms.cxed, self.n_atoms_cxed)
+            self.get_density(self.h_molecules, self.h_molecules.active, self.n_molecules)
+            if self.rank == 0:
+                self.sub_comm.Reduce([self.n_atoms.astype(np.float32), MPI.FLOAT], [self.buff_atom_density, MPI.FLOAT], op = MPI.SUM, root = 0)
+                self.sub_comm.Reduce([self.n_atoms_cxed.astype(np.float32), MPI.FLOAT], [self.buff_atom_density_cx, MPI.FLOAT], op = MPI.SUM, root = 0)
+                self.sub_comm.Reduce([self.n_molecules.astype(np.float32), MPI.FLOAT], [self.buff_molecule_density, MPI.FLOAT], op = MPI.SUM, root = 0)
+
+                self.sub_comm.Reduce([self.h_atoms.Sn_this_step.astype(np.float32), MPI.FLOAT], [self.buff_atom_source, MPI.FLOAT], op = MPI.SUM, root = 0)
+                self.sub_comm.Reduce([self.h_atoms.Sn_this_step_cx.astype(np.float32), MPI.FLOAT], [self.buff_atom_cx_source, MPI.FLOAT], op = MPI.SUM, root = 0)
+                self.sub_comm.Reduce([self.h_molecules.Sn_this_step.astype(np.float32), MPI.FLOAT], [self.buff_molecule_source, MPI.FLOAT], op = MPI.SUM, root = 0)
+
+                self.n_atom_diff_var[self.record_iter, :] = np.sum(self.buff_atom_density, axis = 1) - self.n_atoms_x_before
+                self.n_atom_cx_diff_var[self.record_iter, :] = np.sum(self.buff_atom_density_cx, axis = 1) - self.n_atoms_cxed_x_before
+                self.n_molecule_diff_var[self.record_iter, :] = np.sum(self.buff_molecule_density, axis = 1) - self.n_molecules_x_before
+                self.n_atom_source_var[self.record_iter, :] = self.buff_atom_source
+                self.n_atom_cx_source_var[self.record_iter, :] = self.buff_atom_cx_source
+                self.n_molecule_source_var[self.record_iter, :] = self.buff_molecule_source
+                self.step_length_var[self.record_iter] = step_length
+            else:
+                self.sub_comm.Reduce([self.n_atoms.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+                self.sub_comm.Reduce([self.n_atoms_cxed.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+                self.sub_comm.Reduce([self.n_molecules.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+
+                self.sub_comm.Reduce([self.h_atoms.Sn_this_step.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+                self.sub_comm.Reduce([self.h_atoms.Sn_this_step_cx.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+                self.sub_comm.Reduce([self.h_molecules.Sn_this_step.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+            self.n_atoms.fill(0)
+            self.n_atoms_cxed.fill(0)
+            self.n_molecules.fill(0)
+            self.record_iter = self.record_iter + 1
 
     def save_objects(self, filenames):
         self.h_atoms.save_object_nc(filenames[0])
@@ -254,16 +335,16 @@ class Simulator():
         self.domain.load_object_nc(filenames[2])
 
     def finalize(self):
-        dense_dat_atoms = self.weight*self.dense_dat_atoms/(self.Lz*self.domain.dx)
-        dense_dat_atoms_cx = self.weight*self.dense_dat_atoms_cx/(self.Lz*self.domain.dx)
-        dense_dat_molecules = self.weight*self.dense_dat_molecules/(self.Lz*self.domain.dx)
-        nc_dat = nc.Dataset(self.optDIR + '/kinetic_hists.nc', 'w', 'NETCDF4')
-        nc_dat.createDimension('x', self.bin_edges_x.size-1)
-        nc_dat.createDimension('t', self.nout)
-        n_atom_var = nc_dat.createVariable('n_atom_x_t', 'float32', ('t', 'x'))
-        n_atom_var[:, :] = dense_dat_atoms
-        n_atom_var_cx = nc_dat.createVariable('n_atom_cx_x_t', 'float32', ('t', 'x'))
-        n_atom_var_cx[:, :] = dense_dat_atoms_cx
-        n_molecule_var = nc_dat.createVariable('n_molecule_x_t', 'float32', ('t', 'x'))
-        n_molecule_var[:, :] = dense_dat_molecules
-        nc_dat.close()
+        #dense_dat_atoms = self.weight*self.dense_dat_atoms/(self.Ly*self.domain.dx)
+        #dense_dat_atoms_cx = self.weight*self.dense_dat_atoms_cx/(self.Ly*self.domain.dx)
+        #dense_dat_molecules = self.weight*self.dense_dat_molecules/(self.Ly*self.domain.dx)
+        #nc_dat = nc.Dataset(self.optDIR + '/kinetic_hists.nc', 'w', 'NETCDF4')
+        #nc_dat.createDimension('x', self.bin_edges_x.size-1)
+        #nc_dat.createDimension('t', self.nout)
+        #n_atom_var = nc_dat.createVariable('n_atom_x_t', 'float32', ('t', 'x'))
+        #n_atom_var[:, :] = dense_dat_atoms
+        #n_atom_var_cx = nc_dat.createVariable('n_atom_cx_x_t', 'float32', ('t', 'x'))
+        #n_atom_var_cx[:, :] = dense_dat_atoms_cx
+        #n_molecule_var = nc_dat.createVariable('n_molecule_x_t', 'float32', ('t', 'x'))
+        #n_molecule_var[:, :] = dense_dat_molecules
+        self.nc_dat.close()

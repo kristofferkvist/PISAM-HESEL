@@ -2,7 +2,7 @@
 #==============================================================================
 t_end    = timestep*nout  # total simulation time
 timestep = 3	          # time step length of outputted data
-nout     = 3	          # number of outputted time steps
+nout     = 5	          # number of outputted time steps
 
 myg      = 0              # no need for Y communications, so no guard cells
 mxg      = 2              # guard cell number in the boundary of local CPU
@@ -204,7 +204,7 @@ H_atom_injection_rate     = 0
 H_atom_N_max              = 150000       #Maximum number of atoms
 H_molecule_temperature    = 0.3          #Injection temperature for molecules
 H_atom_temperature        = 1
-H_molecule_injection_rate  = 0.25e+9      #Injected supermolecules per second
+H_molecule_injection_rate  = 1e+9      #Injected supermolecules per second
 phys_injection_rate_molecules = 150e+19
 H_molecule_N_max          = 500000       #Maximum number of molecules.
 flag_initialized          = 0            #If 0 run initializer, else load initiated objects from files

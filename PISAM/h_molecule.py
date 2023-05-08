@@ -38,7 +38,24 @@ class H_molecule(Species):
         self.fragment_energy_a3_c3= 0.75
         self.energy_loss_b3 = 10.62
         self.fragment_energy_b3= 2.75
+        #######Diagnostics#########
+        self.Sn_this_step = np.zeros(self.domain.plasma_dim_x)
+        #######Diagnostics#########
 
+    #Override remove for diagnostic purposes
+    def remove(self, removed):
+        #self.save_to_hist_free_path(removed)
+        mi = self.max_ind
+        inds_x = self.plasma_inds_x[0:mi][removed]
+        np.add.at(self.Sn_this_step, inds_x, -self.percentage[0:mi][removed])
+        self.active[0:mi][removed] = False
+        self.x[0:mi][removed] = self.domain.x_max+self.domain.dx
+        self.y[0:mi][removed] = self.domain.y_max+self.domain.dy
+        self.vx[0:mi][removed] = 0
+        self.vy[0:mi][removed] = 0
+        self.vz[0:mi][removed] = 0
+        self.percentage[0:mi][removed] = 0
+        self.vacant_indices = np.append(self.vacant_indices, np.nonzero(removed)[0])
 
     def probs_ass_ionization(self):
         self.probs_arr[self.ASSISTET_IONIZATION-1, 0:self.max_ind] = self.probs_T_n(self.ass_ion_table)
@@ -85,28 +102,21 @@ class H_molecule(Species):
         vxs_new = vxs_incoming + vxs_fragment_cm
         vys_new = vys_incoming + vys_fragment_cm
         vzs_new = vzs_incoming + vzs_fragment_cm
-        #Breed the new atoms
-        self.diss_product.inflow(xs, ys, vxs_new, vys_new, vzs_new, self.percentage[0:self.max_ind][ass_ionized])
         inds_x = self.plasma_inds_x[0:self.max_ind][ass_ionized]
         inds_y = self.plasma_inds_y[0:self.max_ind][ass_ionized]
+        #Breed the new atoms
+        self.diss_product.inflow(xs, ys, vxs_new, vys_new, vzs_new, self.percentage[0:self.max_ind][ass_ionized], inds_x, inds_y)
         #The Energy loss from the ionization of H2 is 15.4 eV.
         #The energy transferred from the electron to the h2+ ion is 2 times the
         #fragment energy plus the FC and cross sec weighted dissociation energy
         #at 15 eV. This last value it found to be 1.614 eV
-        self.domain.electron_source_particle[inds_x, inds_y] = self.domain.electron_source_particle[inds_x, inds_y] + percentages
+        np.add.at(self.domain.electron_source_particle, (inds_x, inds_y), percentages)
         #Remember that fragments are flying opposite to each other, hence the (-)
-        self.domain.ion_source_momentum_x[inds_x, inds_y] = self.domain.ion_source_momentum_x[inds_x, inds_y] + self.domain.d_ion_mass*(-1)*vxs_new*percentages
-        self.domain.ion_source_momentum_y[inds_x, inds_y] = self.domain.ion_source_momentum_y[inds_x, inds_y] + self.domain.d_ion_mass*(-1)*vys_new*percentages
-        self.domain.ion_source_energy[inds_x, inds_y] = self.domain.ion_source_energy[inds_x, inds_y] + Es_fragment_cm*percentages
-        self.domain.electron_source_energy[inds_x, inds_y] = self.domain.electron_source_energy[inds_x, inds_y] - (2*Es_fragment_cm + 1.61 + 15.4)*percentages + self.domain.kinetic_energy(self.vx[0:self.max_ind][ass_ionized], self.vy[0:self.max_ind][ass_ionized], self.vz[0:self.max_ind][ass_ionized], self.domain.electron_mass)*percentages
+        np.add.at(self.domain.ion_source_momentum_x, (inds_x, inds_y), self.domain.d_ion_mass*(-1)*vxs_new*percentages)
+        np.add.at(self.domain.ion_source_momentum_y, (inds_x, inds_y), self.domain.d_ion_mass*(-1)*vys_new*percentages)
+        np.add.at(self.domain.ion_source_energy, (inds_x, inds_y), Es_fragment_cm*percentages)
+        np.add.at(self.domain.electron_source_energy, (inds_x, inds_y), -(2*Es_fragment_cm + 1.61 + 15.4)*percentages)
         self.remove(ass_ionized)
-
-    def ass_ionize_save(self, ass_ionized):
-        self.hist_ass_ion = self.save_to_hist_reaction(self.hist_ass_ion, ass_ionized)
-        self.hist_ass_ion_temp = self.save_to_hist_reaction_temperature(self.hist_ass_ion_temp, ass_ionized)
-        ns = self.n[0:self.max_ind][ass_ionized]*5e+19
-        self.hist_ns_ass_ion = self.hist_ns_ass_ion + np.histogram(ns, self.bin_edges_n)[0]
-        self.ass_ionize(ass_ionized)
 
     def dissociate(self, dissociated, energy_loss, fragment_energy):
         n_dissociated = np.sum(dissociated)
@@ -129,30 +139,38 @@ class H_molecule(Species):
         vxs_new = np.concatenate((vxs_incoming + vxs_fragment_cm, vxs_incoming - vxs_fragment_cm))
         vys_new = np.concatenate((vys_incoming + vys_fragment_cm, vys_incoming - vys_fragment_cm))
         vzs_new = np.concatenate((vzs_incoming + vzs_fragment_cm, vzs_incoming - vzs_fragment_cm))
-        #Breed the new atoms
-        self.diss_product.inflow(xs, ys, vxs_new, vys_new, vzs_new, np.tile(percentages, 2))
-        #Remove the dissociated molecules
-        self.remove(dissociated)
         inds_x = self.plasma_inds_x[0:self.max_ind][dissociated]
         inds_y = self.plasma_inds_y[0:self.max_ind][dissociated]
-        self.domain.electron_source_energy[inds_x, inds_y] = self.domain.electron_source_energy[inds_x, inds_y] - energy_loss*percentages
-
-    def dissociate_save(self, dissociated, energy_loss, fragment_energy):
-        self.hist_diss = self.save_to_hist_reaction(self.hist_diss, dissociated)
-        self.hist_diss_temp = self.save_to_hist_reaction_temperature(self.hist_diss_temp, dissociated)
-        self.dissociate(dissociated, energy_loss, fragment_energy)
+        #Breed the new atoms
+        self.diss_product.inflow(xs, ys, vxs_new, vys_new, vzs_new, np.tile(percentages, 2), np.tile(inds_x, 2), np.tile(inds_y, 2))
+        #Remove the dissociated molecules
+        np.add.at(self.domain.electron_source_energy, (inds_x, inds_y), -energy_loss*percentages)
+        self.remove(dissociated)
 
     def do_interaction(self, specify_interaction):
         ass_ionized = specify_interaction == self.ASSISTET_IONIZATION
-        self.ass_ionize_save(ass_ionized)
+        self.ass_ionize(ass_ionized)
         dissociated_B1_C1 = specify_interaction == self.DISSOCIATION_B1_C1
-        self.dissociate_save(dissociated_B1_C1, self.energy_loss_B1_C1, self.fragment_energy_B1_C1)
+        self.dissociate(dissociated_B1_C1, self.energy_loss_B1_C1, self.fragment_energy_B1_C1)
         dissociated_Bp1_D1 = specify_interaction == self.DISSOCIATION_Bp1_D1
-        self.dissociate_save(dissociated_Bp1_D1, self.energy_loss_Bp1_D1, self.fragment_energy_Bp1_D1)
+        self.dissociate(dissociated_Bp1_D1, self.energy_loss_Bp1_D1, self.fragment_energy_Bp1_D1)
         dissociated_a3_c3 = specify_interaction == self.DISSOCIATION_a3_c3
-        self.dissociate_save(dissociated_a3_c3, self.energy_loss_a3_c3, self.fragment_energy_a3_c3)
+        self.dissociate(dissociated_a3_c3, self.energy_loss_a3_c3, self.fragment_energy_a3_c3)
         dissociated_b3 = specify_interaction == self.DISSOCIATION_b3
-        self.dissociate_save(dissociated_b3, self.energy_loss_b3, self.fragment_energy_b3)
+        self.dissociate(dissociated_b3, self.energy_loss_b3, self.fragment_energy_b3)
+
+    """
+    def ass_ionize_save(self, ass_ionized):
+        #self.hist_ass_ion = self.save_to_hist_reaction(self.hist_ass_ion, ass_ionized)
+        #self.hist_ass_ion_temp = self.save_to_hist_reaction_temperature(self.hist_ass_ion_temp, ass_ionized)
+        ns = self.n[0:self.max_ind][ass_ionized]*5e+19
+        self.hist_ns_ass_ion = self.hist_ns_ass_ion + np.histogram(ns, self.bin_edges_n)[0]
+        self.ass_ionize(ass_ionized)
+
+    def dissociate_save(self, dissociated, energy_loss, fragment_energy):
+        #self.hist_diss = self.save_to_hist_reaction(self.hist_diss, dissociated)
+        #self.hist_diss_temp = self.save_to_hist_reaction_temperature(self.hist_diss_temp, dissociated)
+        self.dissociate(dissociated, energy_loss, fragment_energy)
 
     def do_interaction_save(self, specify_interaction):
         ass_ionized = specify_interaction == self.ASSISTET_IONIZATION
@@ -165,6 +183,7 @@ class H_molecule(Species):
         self.dissociate_save(dissociated_a3_c3, self.energy_loss_a3_c3, self.fragment_energy_a3_c3)
         dissociated_b3 = specify_interaction == self.DISSOCIATION_b3
         self.dissociate_save(dissociated_b3, self.energy_loss_b3, self.fragment_energy_b3)
+    """
 
     def save_to_hist_vs(self):
         for i in np.arange(self.velocity_domains):

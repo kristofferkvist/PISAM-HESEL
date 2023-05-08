@@ -2,7 +2,7 @@
 import os
 import sys, getopt
 
-sys.path.insert(0, '/home/kristoffer/Desktop/KU/speciale/PISAM-HESEL/PISAM')
+sys.path.insert(0, os.getcwd() + '/PISAM')
 
 import netCDF4 as nc
 import numpy as np
@@ -47,7 +47,7 @@ def main(argv):
         if (rank == 0):
             times[0] = time.time()
         manager.intercomm.Bcast([manager.t, MPI.DOUBLE], root = 0)
-        simulator.record(manager.t)
+        simulator.record_before_step(manager.t)
         manager.t_old_new[0] = manager.t_old_new[1]
         if manager.t > manager.total_sim_time:
             manager.t_old_new[1] = manager.total_sim_time
@@ -63,6 +63,7 @@ def main(argv):
         if (rank == 0):
             times[3] = time.time()
         simulator.sim_step(manager.t_old_new[1]/manager.oci)
+        simulator.record_after_step(manager.t, (manager.t_old_new[1]-manager.t_old_new[0])/manager.oci)
         if (rank == 0):
             times[4] = time.time()
         #Calculate and return sources.
@@ -70,10 +71,13 @@ def main(argv):
         if (rank == 0):
             times[5] = time.time()
             runtimes = runtimes + np.diff(times)
-            print("Max" + str(np.max(simulator.h_atoms.percentage[0:simulator.h_atoms.max_ind])))
-            print("Min" + str(np.min(simulator.h_atoms.percentage[0:simulator.h_atoms.max_ind])))
-            print("Mean" + str(np.sum(simulator.h_atoms.percentage[0:simulator.h_atoms.max_ind])))
-            print("Active" + str(np.sum(simulator.h_atoms.active)))
+            """
+            if simulator.h_atoms.max_ind > 0:
+                print("Max" + str(np.max(simulator.h_atoms.percentage[0:simulator.h_atoms.max_ind])))
+                print("Min" + str(np.min(simulator.h_atoms.percentage[0:simulator.h_atoms.max_ind])))
+                print("Mean" + str(np.sum(simulator.h_atoms.percentage[0:simulator.h_atoms.max_ind])))
+                print("Active" + str(np.sum(simulator.h_atoms.active)))
+            """
 
 #*****************************FINALIZING***************************************#
     if (rank == 0):

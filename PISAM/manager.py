@@ -39,7 +39,7 @@ class Manager():
             loop_size = np.min(np.array([self.n_sources-i, self.procs_python]))
             loop_end = i + loop_size
             #Reduce the repsective source terms to the corresponding rank of the current chunk.
-            #Ususally the number of processors running PISAM is larger than the number of sources (5)
+            #Usually the number of processors running PISAM is larger than the number of sources (5)
             #and thus only one chunk is nessecary.
             while i < loop_end:
                 s = source_list[i]

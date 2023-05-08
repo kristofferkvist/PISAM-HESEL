@@ -27,6 +27,29 @@ class H_atom(Species):
         self.cxed = np.zeros(N_max).astype(np.bool_)
         self.u0_x_ion = np.zeros(N_max).astype(np.float32)
         self.u0_y_ion = np.zeros(N_max).astype(np.float32)
+        #######Diagnostics#########
+        self.Sn_this_step = np.zeros(self.domain.plasma_dim_x)
+        self.Sn_this_step_cx = np.zeros(self.domain.plasma_dim_x)
+        #######Diagnostics#########
+
+    #Override remove for diagnostic purposes
+    def remove(self, removed):
+        #self.save_to_hist_free_path(removed)
+        mi = self.max_ind
+        inds_x = self.plasma_inds_x[0:mi][removed]
+        np.add.at(self.Sn_this_step, inds_x, -self.percentage[0:mi][removed])
+        cx_removed_mask = removed & self.cxed[0:mi]
+        inds_x_cx = self.plasma_inds_x[0:mi][cx_removed_mask]
+        np.add.at(self.Sn_this_step_cx, inds_x_cx, -self.percentage[0:mi][cx_removed_mask])
+        self.cxed[0:mi][removed] = False
+        self.active[0:mi][removed] = False
+        self.x[0:mi][removed] = self.domain.x_max+self.domain.dx
+        self.y[0:mi][removed] = self.domain.y_max+self.domain.dy
+        self.vx[0:mi][removed] = 0
+        self.vy[0:mi][removed] = 0
+        self.vz[0:mi][removed] = 0
+        self.percentage[0:mi][removed] = 0
+        self.vacant_indices = np.append(self.vacant_indices, np.nonzero(removed)[0])
 
     def set_u0_x_ion(self):
         self.u0_x_ion[0:self.max_ind][self.active[0:self.max_ind]] = self.domain.u0_x_ion_mesh[self.plasma_inds_x[0:self.max_ind][self.active[0:self.max_ind]], self.plasma_inds_y[0:self.max_ind][self.active[0:self.max_ind]]]
@@ -55,11 +78,17 @@ class H_atom(Species):
     def ion_sources(self, percentage_loss):
         inds_x = self.plasma_inds_x[0:self.max_ind]
         inds_y = self.plasma_inds_y[0:self.max_ind]
-        self.domain.electron_source_particle[inds_x, inds_y] = self.domain.electron_source_particle[inds_x, inds_y] + percentage_loss
-        self.domain.ion_source_momentum_x[inds_x, inds_y] = self.domain.ion_source_momentum_x[inds_x, inds_y] + self.domain.d_ion_mass*self.vx[0:self.max_ind]*percentage_loss
-        self.domain.ion_source_momentum_y[inds_x, inds_y] = self.domain.ion_source_momentum_y[inds_x, inds_y] + self.domain.d_ion_mass*self.vy[0:self.max_ind]*percentage_loss
-        self.domain.electron_source_energy[inds_x, inds_y] = self.domain.electron_source_energy[inds_x, inds_y] + (self.E[0:self.max_ind]*self.domain.electron_mass/self.domain.d_ion_mass - 13.6)*percentage_loss
-        self.domain.ion_source_energy[inds_x, inds_y] = self.domain.ion_source_energy[inds_x, inds_y] + self.E[0:self.max_ind]*percentage_loss
+        np.add.at(self.domain.electron_source_particle, (inds_x, inds_y), percentage_loss)
+        np.add.at(self.domain.ion_source_momentum_x, (inds_x, inds_y), self.domain.d_ion_mass*self.vx[0:self.max_ind]*percentage_loss)
+        np.add.at(self.domain.ion_source_momentum_y, (inds_x, inds_y), self.domain.d_ion_mass*self.vy[0:self.max_ind]*percentage_loss)
+        np.add.at(self.domain.electron_source_energy, (inds_x, inds_y), -13.6*percentage_loss)
+        np.add.at(self.domain.ion_source_energy, (inds_x, inds_y), self.E[0:self.max_ind]*percentage_loss)
+        #######Diagnostics#########
+        np.add.at(self.Sn_this_step, inds_x, -percentage_loss)
+        inds_x_cx = self.plasma_inds_x[0:self.max_ind][self.cxed[0:self.max_ind]]
+        percentage_loss_cx = percentage_loss[self.cxed[0:self.max_ind]]
+        np.add.at(self.Sn_this_step_cx, inds_x_cx, -percentage_loss_cx)
+        #######Diagnostics#########
 
     def cx_sources(self, cxed, vx_new, vy_new, vz_new):
         inds_x = self.plasma_inds_x[0:self.max_ind][cxed]
@@ -67,9 +96,9 @@ class H_atom(Species):
         vx_old = self.vx[0:self.max_ind][cxed]
         vy_old = self.vy[0:self.max_ind][cxed]
         vz_old = self.vz[0:self.max_ind][cxed]
-        self.domain.ion_source_momentum_x[inds_x, inds_y] = self.domain.ion_source_momentum_x[inds_x, inds_y] + self.domain.d_ion_mass*(-vx_new + vx_old)*self.percentage[0:self.max_ind][cxed]
-        self.domain.ion_source_momentum_y[inds_x, inds_y] = self.domain.ion_source_momentum_y[inds_x, inds_y] + self.domain.d_ion_mass*(-vy_new + vy_old)*self.percentage[0:self.max_ind][cxed]
-        self.domain.ion_source_energy[inds_x, inds_y] = self.domain.ion_source_energy[inds_x, inds_y] + (self.E[0:self.max_ind][cxed] - self.domain.kinetic_energy(vx_new, vy_new, vz_new, self.domain.d_ion_mass))*self.percentage[0:self.max_ind][cxed]
+        np.add.at(self.domain.ion_source_momentum_x, (inds_x, inds_y), self.domain.d_ion_mass*(-vx_new + vx_old)*self.percentage[0:self.max_ind][cxed])
+        np.add.at(self.domain.ion_source_momentum_y, (inds_x, inds_y), self.domain.d_ion_mass*(-vy_new + vy_old)*self.percentage[0:self.max_ind][cxed])
+        np.add.at(self.domain.ion_source_energy, (inds_x, inds_y), (self.E[0:self.max_ind][cxed] - self.domain.kinetic_energy(vx_new, vy_new, vz_new, self.domain.d_ion_mass))*self.percentage[0:self.max_ind][cxed])
 
     #This function rotates the axis of a coordinate system alpha degrees around
     # the y-axis and phi degrees around the z-axis, in that order.
@@ -85,8 +114,11 @@ class H_atom(Species):
         return vxs, vys, vzs
 
     def cx(self, cxed):
+        #######Diagnostics#########
+        new_cx_mask = cxed & (self.cxed[0:self.max_ind] != True)
+        np.add.at(self.Sn_this_step_cx, self.plasma_inds_x[0:self.max_ind][new_cx_mask], self.percentage[0:self.max_ind][new_cx_mask])
+        #######Diagnostics#########
         self.cxed[0:self.max_ind][cxed] = True
-        self.cxed[0:self.max_ind] = np.multiply(self.cxed[0:self.max_ind], self.active[0:self.max_ind])
         self.born_x[0:self.max_ind][cxed] = self.x[0:self.max_ind][cxed]
         self.born_y[0:self.max_ind][cxed] = self.y[0:self.max_ind][cxed]
         n_cxed = np.sum(cxed)
@@ -139,27 +171,27 @@ class H_atom(Species):
     #def cx_save(self, cxed):
     #    self.cxed_save_x, self.cxed_save_y, self.n_cxed = self.save(self.cxed_save_x, self.cxed_save_y, self.n_cxed, cxed)
     #    self.cx(cxed)
-
+    """
     def cx_save(self, cxed):
-        self.hist_cx = self.save_to_hist_reaction(self.hist_cx, cxed)
+        #self.hist_cx = self.save_to_hist_reaction(self.hist_cx, cxed)
         alphas = self.cx(cxed)
         alpha_hist, _ = np.histogram(alphas, self.bin_edges_alpha)
         self.hist_alpha = self.hist_alpha + alpha_hist
 
+    def do_interaction_save(self, specify_interaction):
+        cxed = specify_interaction == self.CX
+        self.cx_save(cxed)
+        excited = specify_interaction == self.EXCITATION
+        self.excite(excited)
+    """
     def excite(self, excited):
         inds_x = self.plasma_inds_x[0:self.max_ind][excited]
         inds_y = self.plasma_inds_y[0:self.max_ind][excited]
-        self.domain.electron_source_energy[inds_x, inds_y] = self.domain.electron_source_energy[inds_x, inds_y] - 10.2*self.percentage[0:self.max_ind][excited]
+        np.add.at(self.domain.electron_source_energy, (inds_x, inds_y), -10.2*self.percentage[0:self.max_ind][excited])
 
     def do_interaction(self, specify_interaction):
         cxed = specify_interaction == self.CX
         self.cx(cxed)
-        excited = specify_interaction == self.EXCITATION
-        self.excite(excited)
-
-    def do_interaction_save(self, specify_interaction):
-        cxed = specify_interaction == self.CX
-        self.cx_save(cxed)
         excited = specify_interaction == self.EXCITATION
         self.excite(excited)
 

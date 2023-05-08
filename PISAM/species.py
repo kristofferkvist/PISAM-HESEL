@@ -146,10 +146,20 @@ class Species():
 
     def init_pos_vs(self):
         n_inflow = int(self.inflow_rate*self.domain.dt)
+        init_x = self.initialize_x(n_inflow)
+        init_y = self.initialize_y(n_inflow)
+        init_vx = self.initialize_vx(n_inflow)
+        init_vy = self.initialize_vyz(n_inflow)
+        init_vz = self.initialize_vyz(n_inflow)
         inflow_percentage = np.ones(n_inflow)*self.inflow_rate*self.domain.dt/n_inflow
-        return self.initialize_x(n_inflow), self.initialize_y(n_inflow), self.initialize_vx(n_inflow), self.initialize_vyz(n_inflow), self.initialize_vyz(n_inflow), inflow_percentage
+        inflow_inds_x = (np.ones(n_inflow)*self.domain.plasma_dim_x-1).astype(np.int32)
+        inflow_inds_y = ((init_y-self.domain.y_min)/self.domain.dy).astype(np.int32)
+        return init_x, init_y, init_vx, init_vy, init_vz, inflow_percentage, inflow_inds_x, inflow_inds_y
 
-    def inflow(self, xs, ys, vxs, vys, vzs, inflow_percentage):
+    def inflow(self, xs, ys, vxs, vys, vzs, inflow_percentage, inflow_inds_x, inflow_inds_y):
+        #######Diagnostics#########
+        np.add.at(self.Sn_this_step, inflow_inds_x, inflow_percentage)
+        #######Diagnostics#########
         lv = self.vacant_indices.size
         n_inflow = xs.size
         if lv < n_inflow:
@@ -164,6 +174,8 @@ class Species():
                 self.vz[self.vacant_indices] = vzs[0:lv]
                 self.E[self.vacant_indices] = self.domain.kinetic_energy(vxs[0:lv], vys[0:lv], vzs[0:lv], self.mass)
                 self.percentage[self.vacant_indices] = inflow_percentage[0:lv]
+                self.plasma_inds_x[self.vacant_indices] = inflow_inds_x[0:lv]
+                self.plasma_inds_y[self.vacant_indices] = inflow_inds_y[0:lv]
                 self.vacant_indices = np.array([]).astype(np.int32)
             max_ind_new = self.max_ind+n_inflow-lv
             self.active[self.max_ind:(max_ind_new)] = True
@@ -176,6 +188,8 @@ class Species():
             self.vz[self.max_ind:(max_ind_new)] = vzs[lv:]
             self.E[self.max_ind:(max_ind_new)] = self.domain.kinetic_energy(vxs[lv:], vys[lv:], vzs[lv:], self.mass)
             self.percentage[self.max_ind:(max_ind_new)] = inflow_percentage[lv:]
+            self.plasma_inds_x[self.max_ind:(max_ind_new)] = inflow_inds_x[lv:]
+            self.plasma_inds_y[self.max_ind:(max_ind_new)] = inflow_inds_y[lv:]
             self.max_ind = max_ind_new
         else:
             self.active[self.vacant_indices[0:n_inflow]] = True
@@ -188,6 +202,8 @@ class Species():
             self.vz[self.vacant_indices[0:n_inflow]] = vzs
             self.E[self.vacant_indices[0:n_inflow]] = self.domain.kinetic_energy(vxs, vys, vzs, self.mass)
             self.percentage[self.vacant_indices[0:n_inflow]] = inflow_percentage
+            self.plasma_inds_x[self.vacant_indices[0:n_inflow]] = inflow_inds_x
+            self.plasma_inds_y[self.vacant_indices[0:n_inflow]] = inflow_inds_y
             self.vacant_indices = self.vacant_indices[n_inflow:]
 
     def rand_search_func(self, a):
@@ -262,7 +278,7 @@ class Species():
         self.z[0:self.max_ind][bounced] = 0
 
     def remove(self, removed):
-        self.save_to_hist_free_path(removed)
+        #self.save_to_hist_free_path(removed)
         mi = self.max_ind
         self.active[0:mi][removed] = False
         self.x[0:mi][removed] = self.domain.x_max+self.domain.dx
@@ -305,44 +321,42 @@ class Species():
         return rates
 
     def step_body(self):
-        new_xs, new_ys, new_vxs, new_vys, new_vzs, inflow_percentage = self.init_pos_vs()
-        self.inflow(new_xs, new_ys, new_vxs, new_vys, new_vzs, inflow_percentage)
         self.domain.time_array[0] = time.time()
-        self.set_plasma_inds()
-        self.domain.time_array[1] = time.time()
+        init_x, init_y, init_vx, init_vy, init_vz, inflow_percentage, inflow_inds_x, inflow_inds_y = self.init_pos_vs()
+        self.inflow(init_x, init_y, init_vx, init_vy, init_vz, inflow_percentage, inflow_inds_x, inflow_inds_y)
         self.set_Te()
         self.set_Ti()
         self.set_n()
-        self.domain.time_array[2] = time.time()
+        self.domain.time_array[1] = time.time()
         self.get_probs()
-        self.domain.time_array[3] = time.time()
+        self.domain.time_array[2] = time.time()
         self.probs_arr[:, 0:self.max_ind] = self.get_probs_from_rates(self.probs_arr[:, 0:self.max_ind])
-        self.domain.time_array[4] = time.time()
+        self.domain.time_array[3] = time.time()
         specify_interaction = self.calc_interaction(self.probs_arr)
-        self.domain.time_array[5] = time.time()
+        self.domain.time_array[4] = time.time()
         specify_interaction[~self.active[0:self.max_ind]] = 0
-        self.domain.time_array[6] = time.time()
+        self.domain.time_array[5] = time.time()
         return specify_interaction
 
     def step(self):
         specify_interaction = self.step_body()
         self.do_interaction(specify_interaction)
+        self.domain.time_array[6] = time.time()
+        self.translate()
+        self.domain.time_array[7] = time.time()
+        self.set_plasma_inds()
+        self.domain.time_array[8] = time.time()
+        self.domain.wall_times = self.domain.wall_times + np.diff(self.domain.time_array)
+
+    """
+    def step_save(self):
+        specify_interaction = self.step_body()
+        self.do_interaction_save(specify_interaction)
         self.domain.time_array[7] = time.time()
         self.translate()
         self.domain.time_array[8] = time.time()
         self.domain.wall_times = self.domain.wall_times + np.diff(self.domain.time_array)
-
-    def step_save(self):
-        self.save_to_hist_x()
-        self.save_to_hist_vs()
-        specify_interaction = self.step_body()
-        self.do_interaction_save(specify_interaction)
-        self.domain.time_array[8] = time.time()
-        self.domain.wall_times = self.domain.wall_times + np.diff(self.domain.time_array)
-
-    def save_to_hist_x(self):
-        hist_data, _ = np.histogram(self.x[self.active==1], bins=self.bin_edges_x)
-        self.hist_x = self.hist_x+hist_data
+    """
 
     def save_to_hist_reaction(self, hist, reacted):
         hist_data, _ = np.histogram(self.x[0:self.max_ind][reacted], bins=self.bin_edges_x)
