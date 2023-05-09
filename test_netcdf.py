@@ -114,9 +114,9 @@ dx = Ly/512
 xs = np.arange(512)*dx
 Lz = 1
 
-n_atoms_x = np.mean(ds['n_atom_x_y_t'], axis = 2)
-n_atoms_cx_x = np.mean(ds['n_atom_cx_x_y_t'], axis = 2)
-n_molecules_x = np.mean(ds['n_molecule_x_y_t'], axis = 2)
+n_atoms_x = np.mean(ds['n_atom_x_y_t'], axis = 2)*0.12598911
+n_atoms_cx_x = np.mean(ds['n_atom_cx_x_y_t'], axis = 2)*0.12598911
+n_molecules_x = np.mean(ds['n_molecule_x_y_t'], axis = 2)*0.12598911
 
 n_atom_sources = np.array(ds['n_atom_x_source'])*weight
 n_atom_cx_sources = np.array(ds['n_atom_cx_x_source'])*weight
@@ -142,12 +142,12 @@ molecule_fluxes = calc_fluxes(dts, n_molecule_diff, n_molecule_sources, Ly, Lz)
 #plot_densities(n_atoms_not_cx_x, 'Atoms')
 #plot_densities(n_atoms_cx_x, 'CX')
 
-transport_coefficients(atom_not_cx_fluxes, n_atoms_not_cx_x, 100, 100, 500, dx, xs, 'Warm Atoms', False)
-transport_coefficients(atom_cx_fluxes, n_atoms_cx_x, 100, 20, 500, dx, xs, 'CX Atoms', False)
-transport_coefficients(molecule_fluxes, n_molecules_x, 100, 200, 500, dx, xs, 'Molecules', False)
+#transport_coefficients(atom_not_cx_fluxes, n_atoms_not_cx_x, 100, 100, 500, dx, xs, 'Warm Atoms', False)
+#transport_coefficients(atom_cx_fluxes, n_atoms_cx_x, 100, 20, 500, dx, xs, 'CX Atoms', False)
+#transport_coefficients(molecule_fluxes, n_molecules_x, 100, 200, 500, dx, xs, 'Molecules', False)
 
-#transport_coefficients(atom_not_cx_fluxes, n_atoms_not_cx_x, 250, 350, dx, xs, 'Warm Atoms', True)
-#transport_coefficients(atom_cx_fluxes, n_atoms_cx_x, 250, 350, dx, xs, 'CX Atoms', True)
-#transport_coefficients(molecule_fluxes, n_molecules_x, 250, 320, dx, xs, 'Molecules', True)
+transport_coefficients(atom_not_cx_fluxes, n_atoms_not_cx_x, 100, 360, 405, dx, xs, 'Warm Atoms', True)
+transport_coefficients(atom_cx_fluxes, n_atoms_cx_x, 100, 250, 405, dx, xs, 'CX Atoms', True)
+transport_coefficients(molecule_fluxes, n_molecules_x, 100, 250, 320, dx, xs, 'Molecules', True)
 
 plt.show()

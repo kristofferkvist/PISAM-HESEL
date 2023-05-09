@@ -71,13 +71,6 @@ def main(argv):
         if (rank == 0):
             times[5] = time.time()
             runtimes = runtimes + np.diff(times)
-            """
-            if simulator.h_atoms.max_ind > 0:
-                print("Max" + str(np.max(simulator.h_atoms.percentage[0:simulator.h_atoms.max_ind])))
-                print("Min" + str(np.min(simulator.h_atoms.percentage[0:simulator.h_atoms.max_ind])))
-                print("Mean" + str(np.sum(simulator.h_atoms.percentage[0:simulator.h_atoms.max_ind])))
-                print("Active" + str(np.sum(simulator.h_atoms.active)))
-            """
 
 #*****************************FINALIZING***************************************#
     if (rank == 0):

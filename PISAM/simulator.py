@@ -279,9 +279,9 @@ class Simulator():
                 self.n_atoms_cxed_x_before = np.sum(self.buff_atom_density_cx, axis = 1)
                 self.n_molecules_x_before = np.sum(self.buff_molecule_density, axis = 1)
 
-                self.n_atom_var[self.record_iter, :, :] = self.weight*self.buff_atom_density/(self.Ly*self.domain.dx*self.domain.dy)
-                self.n_atom_cx_var[self.record_iter, :, :] = self.weight*self.buff_atom_density_cx/(self.Ly*self.domain.dx*self.domain.dy)
-                self.n_molecule_var[self.record_iter, :, :] = self.weight*self.buff_molecule_density/(self.Ly*self.domain.dx*self.domain.dy)
+                self.n_atom_var[self.record_iter, :, :] = self.weight*self.buff_atom_density/(self.domain.dx*self.domain.dy)
+                self.n_atom_cx_var[self.record_iter, :, :] = self.weight*self.buff_atom_density_cx/(self.domain.dx*self.domain.dy)
+                self.n_molecule_var[self.record_iter, :, :] = self.weight*self.buff_molecule_density/(self.domain.dx*self.domain.dy)
             else:
                 self.sub_comm.Reduce([self.n_atoms.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
                 self.sub_comm.Reduce([self.n_atoms_cxed.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
