@@ -1,6 +1,6 @@
 # PISAM-HESEL
 PISAM is a full 3D discrete particle model tailored for modeling deuterium atoms and molecules in fusion plasma.
-PISAM has been coupled with the 2D turbulent edge plasma model HESEL. PISAM is implemented in Python while HESEL is implement in the C++ framework BOUT++. The two codes are coupled using MPI. 
+PISAM has been coupled with the 2D turbulent edge plasma model HESEL. PISAM is implemented in Python while HESEL is implement in the C++ framework BOUT++. The two codes are coupled using MPI. The details on the developments of PISAM as well as the implementation in Python and coupling to HESEL is described in detail in my thesis, which can be downloaded from this repository as the file Kristoffer_Kvist_Master_Mhesis.pdf.
 
 ## Installation
 
