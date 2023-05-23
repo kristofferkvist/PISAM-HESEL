@@ -7,7 +7,7 @@ incintshear = false		# type: bool
 mxg = 2		# type: int, doc: Number of guard cells on each side in X
 myg = 0		# type: int, doc: Number of guard cells on each side in Y
 non_uniform = true		# type: bool
-nout = 5		# type: int, doc: Number of output steps
+nout = 1		# type: int, doc: Number of output steps
 optionfile = BOUT.inp		# type: string
 periodicx = false		# type: bool, doc: Make grid periodic in X?
 restart = false		# type: bool, doc: Load state from restart files?
@@ -199,9 +199,13 @@ h_molecule_injection_rate = 1e+9		# not used , from: data/BOUT.inp
 h_molecule_n_max = 500000		# not used , from: data/BOUT.inp
 h_molecule_temperature = 0.3		# not used , from: data/BOUT.inp
 init_source_time = 1		# not used , from: data/BOUT.inp
+min_weight_atom = 0.01		# not used , from: data/BOUT.inp
 phys_injection_rate_molecules = 150e+19		# not used , from: data/BOUT.inp
 r_std_blur = 10		# not used , from: data/BOUT.inp
 step_length = 1		# not used , from: data/BOUT.inp
+t_wall = 0.3		# not used , from: data/BOUT.inp
+wall_boundary_atom = 0		# not used , from: data/BOUT.inp
+wall_boundary_molecule = 1		# not used , from: data/BOUT.inp
 wallabsorbtionfractionatom = 0.2		# not used , from: data/BOUT.inp
 wallabsorbtionfractionmolecule = 0.2		# not used , from: data/BOUT.inp
 
@@ -349,12 +353,12 @@ shiftinput = false		# type: bool
 shiftoutput = false		# type: bool
 
 [run]
-finished = Thu May  4 15:36:19 2023
+finished = Tue May 23 11:35:47 2023
 		# not used , from: 
 revision = ab69d52f362dcaaddb22f3bd3b16aa7bab924d84		# not used , from: 
-run_id = 4d5b3a22-99b0-49c6-b948-1643aa3b0475		# not used , from: Solver
+run_id = 2251a9c6-b178-4b10-be71-ed6d2e51c988		# not used , from: Solver
 run_restart_from = zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz		# not used , from: Solver
-started = Thu May  4 15:34:37 2023
+started = Tue May 23 11:32:41 2023
 		# not used , from: 
 version = 4.4.2		# not used , from: 
 
@@ -389,7 +393,7 @@ monitor_timestep = false		# type: bool
 mudq = 136		# type: int
 mukeep = 0		# type: int
 mxstep = 1000000		# type: int
-nout = 5		# type: int, doc: Number of output steps. Overrides global setting.
+nout = 1		# type: int, doc: Number of output steps. Overrides global setting.
 output_step = 3		# type: BoutReal, doc: Output time step size. Overrides global TIMESTEP setting.
 precon_dimens = 50		# type: int
 precon_tol = 0.0001		# type: BoutReal

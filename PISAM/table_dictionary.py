@@ -1,5 +1,9 @@
+"""This short scrips simply collects all the calculated tables in species-specific
+dictionarys that are passes to each species at initialization."""
+
+
 import pickle
-data_folder = 'input_data/'
+data_folder = 'PISAM/input_data/'
 
 def set_entry_from_pkl(dict, entry_name, filename):
     with open(data_folder + filename + '.pkl', 'rb') as f:
@@ -21,7 +25,7 @@ def make_dict_molecule():
     print('COMPILING MOLECULE TABLE DICTIONARY')
     dict = {}
     filenames = ['effective_ion_rate_molecule', 'ass_ion_fragment_KE', 'B1_C1_table', 'Bp1_D1_table', 'a3_c3_table', 'b3_table']
-    entry_names = ['effective_ion_rate', 'ass_ion_fragment_KE', 'B1_C1_table', 'Bp1_D1_table', 'a3_c3_table', 'b3_table']
+    entry_names = ['effective_ion_rate', 'MID_fragment_KE', 'B1_C1_table', 'Bp1_D1_table', 'a3_c3_table', 'b3_table']
     for i in range(len(filenames)):
         filename = filenames[i]
         entry_name = entry_names[i]

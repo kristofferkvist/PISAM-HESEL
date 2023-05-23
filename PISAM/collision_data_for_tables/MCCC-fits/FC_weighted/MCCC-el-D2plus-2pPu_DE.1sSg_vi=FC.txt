@@ -1,0 +1,41 @@
+# Convergent close-coupling calculations of electron scattering from D2+
+# initially in the electronic ground 1sSg, vibrational states v_i,
+# which are  populated according to the the Franck-Condon factors.
+# Integrated cross sections for the transition
+# (1sSg, v_i) ---> 2pPu, where
+# 's' and 'p' refers to orbital angular momentum l = 0
+# and l = 1, respectively, 'S' refers to the symbol sigma
+# (orbital angular momentum projection m = 0),
+# 'P' refers to the symbol pi
+# (orbital angular momentum projection |m| = 1),
+# and 'g' and 'u' refers to states even or odd parity, respectively.
+# Cross sections are calculated in the adiabatic-nuclei approximation
+# where the cross section have been summed analytically over all final
+# rotational and vibrational states. These cross sections were
+# calculated with a 351-state CCC calculation.
+# To reference and for details see
+# M. C. Zammit, D. V. Fursa, and I. Bray, Phys. Rev. A 90, 022711 (2014).
+#     Energy (eV)     Integrated Cross Section (a_0^2) 
+      1.15000E+01     3.49593E-01 
+      1.30000E+01     5.89247E-01 
+      1.50000E+01     9.60320E-01 
+      2.00000E+01     1.23338E+00 
+      3.00000E+01     1.27085E+00 
+      4.00000E+01     1.31773E+00 
+      5.00000E+01     1.31305E+00 
+      6.00000E+01     1.30725E+00 
+      7.50000E+01     1.26643E+00 
+      9.00000E+01     1.22274E+00 
+      1.00000E+02     1.19004E+00 
+      1.15000E+02     1.14162E+00 
+      1.30000E+02     1.09224E+00 
+      1.50000E+02     1.03016E+00 
+      1.75000E+02     9.59899E-01 
+      2.00000E+02     8.96942E-01 
+      2.50000E+02     7.91066E-01 
+      3.00000E+02     7.08586E-01 
+      4.00000E+02     5.87169E-01 
+      5.00000E+02     5.03672E-01 
+      6.25000E+02     4.29570E-01 
+      7.50000E+02     3.75551E-01 
+      1.00000E+03     3.01974E-01 

@@ -104,7 +104,8 @@ def transport_coefficients(fluxes, densities, t_min, ind_min, ind_max, dx, xs, l
     plt.legend()
     plt.tight_layout()
 
-ds = nc.Dataset('/home/kristoffer/Desktop/KU/speciale/python_stuff/netcdf_data/neutral_diagnostics.nc')
+#ds = nc.Dataset('/home/kristoffer/Desktop/KU/speciale/python_stuff/netcdf_data/neutral_diagnostics.nc')
+ds = nc.Dataset('data/neutral_diagnostics.nc')
 
 dts = np.array(ds['dt'])
 molecule_injection_rate = np.array(ds['molecule_injection_rate'])[0]
@@ -114,9 +115,15 @@ dx = Ly/512
 xs = np.arange(512)*dx
 Lz = 1
 
+""" Precautions for the one wrong dataset
 n_atoms_x = np.mean(ds['n_atom_x_y_t'], axis = 2)*0.12598911
 n_atoms_cx_x = np.mean(ds['n_atom_cx_x_y_t'], axis = 2)*0.12598911
 n_molecules_x = np.mean(ds['n_molecule_x_y_t'], axis = 2)*0.12598911
+"""
+
+n_atoms_x = np.mean(ds['n_atom_x_y_t'], axis = 2)
+n_atoms_cx_x = np.mean(ds['n_atom_cx_x_y_t'], axis = 2)
+n_molecules_x = np.mean(ds['n_molecule_x_y_t'], axis = 2)
 
 n_atom_sources = np.array(ds['n_atom_x_source'])*weight
 n_atom_cx_sources = np.array(ds['n_atom_cx_x_source'])*weight
@@ -130,24 +137,24 @@ n_atoms_not_cx_x = n_atoms_x - n_atoms_cx_x
 n_atom_not_cx_sources = n_atom_sources - n_atom_cx_sources
 n_atom_not_cx_diff = n_atom_diff - n_atom_cx_diff
 
-atom_not_cx_fluxes = calc_fluxes(dts, n_atom_not_cx_diff, n_atom_not_cx_sources, Ly, Lz)
-atom_cx_fluxes = calc_fluxes(dts, n_atom_cx_diff, n_atom_cx_sources, Ly, Lz)
-molecule_fluxes = calc_fluxes(dts, n_molecule_diff, n_molecule_sources, Ly, Lz)
+#atom_not_cx_fluxes = calc_fluxes(dts, n_atom_not_cx_diff, n_atom_not_cx_sources, Ly, Lz)
+#atom_cx_fluxes = calc_fluxes(dts, n_atom_cx_diff, n_atom_cx_sources, Ly, Lz)
+#molecule_fluxes = calc_fluxes(dts, n_molecule_diff, n_molecule_sources, Ly, Lz)
 
 #plot_fluxes(molecule_fluxes, 'Molecules')
 #plot_fluxes(atom_not_cx_fluxes, 'Atoms')
 #plot_fluxes(atom_cx_fluxes, 'CX')
 
-#plot_densities(n_molecules_x, 'Molecules')
-#plot_densities(n_atoms_not_cx_x, 'Atoms')
-#plot_densities(n_atoms_cx_x, 'CX')
+plot_densities(n_molecules_x, 'Molecules')
+plot_densities(n_atoms_not_cx_x, 'Atoms')
+plot_densities(n_atoms_cx_x, 'CX')
 
 #transport_coefficients(atom_not_cx_fluxes, n_atoms_not_cx_x, 100, 100, 500, dx, xs, 'Warm Atoms', False)
 #transport_coefficients(atom_cx_fluxes, n_atoms_cx_x, 100, 20, 500, dx, xs, 'CX Atoms', False)
 #transport_coefficients(molecule_fluxes, n_molecules_x, 100, 200, 500, dx, xs, 'Molecules', False)
 
-transport_coefficients(atom_not_cx_fluxes, n_atoms_not_cx_x, 100, 360, 405, dx, xs, 'Warm Atoms', True)
-transport_coefficients(atom_cx_fluxes, n_atoms_cx_x, 100, 250, 405, dx, xs, 'CX Atoms', True)
-transport_coefficients(molecule_fluxes, n_molecules_x, 100, 250, 320, dx, xs, 'Molecules', True)
+#transport_coefficients(atom_not_cx_fluxes, n_atoms_not_cx_x, 100, 360, 405, dx, xs, 'Warm Atoms', True)
+#transport_coefficients(atom_cx_fluxes, n_atoms_cx_x, 100, 250, 405, dx, xs, 'CX Atoms', True)
+#transport_coefficients(molecule_fluxes, n_molecules_x, 100, 250, 320, dx, xs, 'Molecules', True)
 
 plt.show()

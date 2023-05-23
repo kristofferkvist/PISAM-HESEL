@@ -1,3 +1,17 @@
+"""
+This script uses the classes implemented in make_tables.py to create the tables
+used in PISAM simulations. The data loaded to make the tables are in the form
+of fit parameters or data points for reactions rates and cross sections. The data is
+stored in the directory "Collision data for tables". I you add a reaction is it
+recommended to follow the procedure of calculating a table of reaction rates
+prefferably using one of the classes provided in make_tables.py, and then saving
+this table in the dictionary holding the tables of the relevant species, by adjusting
+"table_dictionary.py".
+
+Certain table ranges and resolutions are chosen in the script below. These are by
+no means universal and can be adjusted depending on your purpose.
+"""
+
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
@@ -11,12 +25,12 @@ from make_tables import Tables_2d_T_n
 from make_tables import Table_simple
 from make_tables import Table_light_heavy_sampling_from_spline_clean
 
-path = 'input_data'
+path = 'PISAM/input_data'
 isExist = os.path.exists(path)
 if not isExist:
    os.makedirs(path)
 data_folder = path + '/'
-coef_folder = 'collision_data_for_tables/'
+coef_folder = 'PISAM/collision_data_for_tables/'
 mccc_fit_folder = coef_folder + 'MCCC-fits/'
 
 MASS_D_ATOM = 2.01410177811*1.660539e-27

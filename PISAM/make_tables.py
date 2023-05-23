@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import h5py
 from scipy.interpolate import interp1d
 
+#A minimal table where table data is inputted directly. It is meant for 1D
+#distributions that needs to be sampled from during simulation.
 class Table_simple:
     def __init__(self, min, dx, data, table_filename):
         self.min = min
@@ -15,6 +17,7 @@ class Table_simple:
         with open(self.table_filename + '.pkl', 'wb') as f:
             pickle.dump(self, f)
 
+#A table for reactions rates that are only dependent on plasma temperature.
 class Tables_1d:
     def __init__(self, T_min, T_max, T_res, base, sum_coefs, table_filename):
         self.T_min = T_min
@@ -49,6 +52,7 @@ class Tables_1d:
         with open(self.table_filename + '.pkl', 'wb') as f:
             pickle.dump(self, f)
 
+#A 2D table for reactions rates that depend on plasma temperature and neutral energy.
 class Tables_2d:
     def __init__(self, T_min, T_max, dT, E_min, E_max, dE, sum_coefs, table_filename):
         self.T_min = T_min
@@ -89,6 +93,7 @@ class Tables_2d:
         with open(self.table_filename + '.pkl', 'wb') as f:
             pickle.dump(self, f)
 
+#A 2D table for reactions rates that depend on plasma temperature and plasma density.
 class Tables_2d_T_n:
     def __init__(self, T_min, T_max, T_res, n_min, n_max, n_res, sum_coefs, table_filename):
         self.T_min = T_min
@@ -130,6 +135,10 @@ class Tables_2d_T_n:
         with open(self.table_filename + '.pkl', 'wb') as f:
             pickle.dump(self, f)
 
+#This table calculates the velocity distribution of ions going into charge exchange
+#reactions in accordance with the subsection "Charge Exchange of Deuterium Atoms and Deuterium Ions"
+#in chapter 5 of my thesis and the subsection "Ion-Neutral Collisions" in chapter 3 of my thesis.
+#The distribution depends on the ion temperature and the velocity of the neutral in the rest frame of the ions.
 class Table_cx_sampling_3D:
     def __init__(self, T_i_min, T_i_max, T_i_res, E_n_min, E_n_max, E_n_res, base, d_alpha, n_standard_deviations, v_res, sum_coefs, table_filename, mass):
         self.T_i_min = T_i_min
@@ -139,6 +148,7 @@ class Table_cx_sampling_3D:
         self.d_alpha = d_alpha
         self.T_i_res = T_i_res
         self.E_n_res = E_n_res
+        #Sum coefficients for the fir used for the cross section.
         self.sum_coefs = sum_coefs
         self.table_filename = table_filename
         self.base = base
@@ -149,6 +159,7 @@ class Table_cx_sampling_3D:
         self.mass = mass
         self.v_res = v_res
         self.n_standard_deviations = n_standard_deviations
+        #Temperatures and energies are sampled logarithmically to have the best resolution at the places with the strongest dependence of T and E
         self.T_log_min = np.log(T_i_min)/np.log(base)
         self.T_log_max = np.log(T_i_max)/np.log(base)
         self.dT_log = (self.T_log_max - self.T_log_min)/(T_i_res-1)
@@ -171,10 +182,12 @@ class Table_cx_sampling_3D:
         inds[inds > self.E_n_res - 1] = self.E_n_res - 1
         return inds
 
+    #Calculate the relative velocity from the magnitude of v_n and v_i and the polar angle og v_i in the d-frame.
     def v_rel(self, v_n_grid, v_i_grid, alpha_grid):
         v_rel = np.sqrt(np.power(v_n_grid, 2) + np.power(v_i_grid, 2) - 2*v_n_grid*v_i_grid*np.cos(alpha_grid))
         return v_rel
 
+    #Calculate cross section based on the relative velocity
     def cx_cross_section(self, v_rel_grid):
         E_grid = 0.5*np.power(v_rel_grid, 2)*self.mass/1.602e-19
         E_grid_valid = E_grid > 0.1
@@ -187,6 +200,8 @@ class Table_cx_sampling_3D:
         cross_section_grid[np.invert(E_grid_valid)] = 0
         return cross_section_grid
 
+    #Calculate the value of the integrand of the reaction rate in spherical
+    #coordinates of the d-frame. See the subsection "Ion-Neutral Collisions" in chapter 3 of my thesis.
     def rate_contrib_T(self, T, alpha_grid, v_i_grid, v_rel_grid):
         cross_section_grid = self.cx_cross_section(v_rel_grid)
         cross_vrel = np.multiply(cross_section_grid, v_rel_grid)
@@ -195,6 +210,9 @@ class Table_cx_sampling_3D:
         exp_sin_alpha = np.multiply(exp_grid, np.sin(alpha_grid))
         return 2*np.pi*np.power(self.mass/(2*np.pi*T*1.602e-19), 1.5)*np.multiply(exp_sin_alpha, cross_vrel_v_i)
 
+    #For a certain T make 3D mesh grids from the three 1D arrays containing the
+    #ion velocities relevant to the temperature, the relative neutral velocities
+    #corresponding to the chosen range of energy and the chosen range of polar angles, alpha.
     def make_grids(self, T):
         v_is = np.linspace(0, self.n_standard_deviations*np.sqrt(T*1.602e-19/self.mass), self.v_res)
         v_ns = np.sqrt(2*self.Es*1.602e-19/self.mass)
@@ -202,18 +220,27 @@ class Table_cx_sampling_3D:
         v_rel_grid = self.v_rel(v_n_grid, v_i_grid, alpha_grid)
         return alpha_grid, v_i_grid, v_rel_grid
 
+    #Fill the table by calculating the 3D contributions corresponding to each value of T
+    #Lastly the cumsum (inclusive) is taken such that the table is ready for sampling. Moreover
+    #zeros are inserted in the beginning of the axis over which the cumsum runs to ready for the
+    #linear interpolation process used in the sampling.
     def tabulate(self):
         self.table = np.zeros((self.Ts.size, self.Es.size, self.v_res+1, self.alphas.size))
         for i in np.arange(self.Ts.size):
             alpha_grid, v_i_grid, v_rel_grid = self.make_grids(self.Ts[i])
             self.table[i, :, :, :] = np.insert(np.cumsum(self.rate_contrib_T(self.Ts[i], alpha_grid, v_i_grid, v_rel_grid), axis = 1), 0, 0, axis = 1)
-            #self.table[i, :, :, :] = self.rate_contrib_T(self.Ts[i], v_i_grid, v_rel_grid)
-
 
     def save_object(self):
         with open(self.table_filename + '.pkl', 'wb') as f:
             pickle.dump(self, f)
 
+#This table calculates the contribution to reaction rates electrons of various
+#velocities from a spline to cross section data. As for the previous table the
+#temperatures are sampled logarithmically, and the ion evaluation velocities depends
+#on temperature. From these contributions the rate is trivially calculated and stored.
+#The "distribution part" of the table is not currently used but can be applied to
+#sample the electrons going into the relevant reaction, which can be usefull if electron
+#energy loss or fragment energy in strongly dependent on impact energy.
 class Table_light_heavy_sampling_from_spline_clean:
     def __init__(self, T_e_min, T_e_max, T_e_res, base, n_standard_deviations, v_res, input_file, table_filename):
         self.T_e_min = T_e_min

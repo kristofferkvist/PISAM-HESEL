@@ -2,7 +2,7 @@
 #==============================================================================
 t_end    = timestep*nout  # total simulation time
 timestep = 3	          # time step length of outputted data
-nout     = 5	          # number of outputted time steps
+nout     = 1	          # number of outputted time steps
 
 myg      = 0              # no need for Y communications, so no guard cells
 mxg      = 2              # guard cell number in the boundary of local CPU
@@ -214,8 +214,10 @@ r_std_blur                = 10            #standard deviation for blur expressed
 init_source_time          = 1            #Time inter over which the sources for the first timestep in plasma sim is calculated in oci units
 wallAbsorbtionFractionAtom    = 0.2          # Fraction absorbed
 wallAbsorbtionFractionMolecule = 0.2
-
-
+T_wall = 0.3                            #Temperature for reemmision after absorbtion at wall
+wall_boundary_atom = 0                  #Flag for including wall boundary for atoms
+wall_boundary_molecule = 1              #Flag for including wall boundary for molecules
+min_weight_atom = 0.01                   #The minimum weight for atoms before they are automatically fully ionized
 #==============================================================================
 #==============================================================================
 [All]          # default setttings for variable boundary conditions

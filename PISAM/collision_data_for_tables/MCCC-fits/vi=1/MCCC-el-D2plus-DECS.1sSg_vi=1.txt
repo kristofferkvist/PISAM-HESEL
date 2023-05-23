@@ -1,0 +1,43 @@
+# Convergent close-coupling calculations of electron scattering from D2+
+# initially in the electronic ground 1sSg, vibrational state v_i=1.
+# Dissociative excitation cross sections (DECS) of the
+# (1sSg, v_i) state, where
+# 's' refers to orbital angular momentum l = 0,
+# 'S' refers to the symbol sigma
+# (orbital angular momentum projection m = 0)
+# and 'g' refers to the state's even parity.
+# The dissociative excitation process:
+# e- + D2+ ---> D(n'l')  + D+ + e-.
+# Here DECS are calculated as the sum of all
+# electronic excitation cross sections.
+# Cross sections are calculated in the adiabatic-nuclei approximation
+# where the cross section have been summed analytically over all final
+# rotational and vibrational states. These cross sections were
+# calculated with a 351-state CCC calculation.
+# To reference and for details see
+# M. C. Zammit, D. V. Fursa, and I. Bray, Phys. Rev. A 90, 022711 (2014).
+#     Energy (eV)     Integrated Cross Section (a_0^2) 
+      1.00000E+01     4.62191E+00 
+      1.15000E+01     4.67562E+00 
+      1.30000E+01     4.82110E+00 
+      1.50000E+01     5.31301E+00 
+      2.00000E+01     6.35499E+00 
+      3.00000E+01     5.85437E+00 
+      4.00000E+01     5.25690E+00 
+      5.00000E+01     4.79382E+00 
+      6.00000E+01     4.48432E+00 
+      7.50000E+01     4.09562E+00 
+      9.00000E+01     3.79072E+00 
+      1.00000E+02     3.61703E+00 
+      1.15000E+02     3.38703E+00 
+      1.30000E+02     3.17974E+00 
+      1.50000E+02     2.94354E+00 
+      1.75000E+02     2.69645E+00 
+      2.00000E+02     2.48565E+00 
+      2.50000E+02     2.15266E+00 
+      3.00000E+02     1.90326E+00 
+      4.00000E+02     1.55027E+00 
+      5.00000E+02     1.31287E+00 
+      6.25000E+02     1.10758E+00 
+      7.50000E+02     9.60631E-01 
+      1.00000E+03     7.63615E-01 

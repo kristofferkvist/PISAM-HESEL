@@ -1,6 +1,7 @@
 #include "KineticNeutrals.hxx"
 
-
+// ****** Constructor ******
+//Reads the nessecary fields from HESEL
 KineticNeutrals::KineticNeutrals(
   const HeselParameters &i_hesel_para_,
   const Field3D &i_n,
@@ -17,14 +18,17 @@ phi(i_phi),
 B(i_B)
 {}
 
-/// ****** Destructor ******
+// ****** Destructor ******
+// Deallocate the memory of the buffers used for MPI communication
 KineticNeutrals::~KineticNeutrals(){
 	delete [] recv_buf;
 	delete [] send_buf;
 }
 
 int KineticNeutrals::InitKineticNeutrals(bool restart){
+    //Read the options for kinetic neutrals in the BOUT.inp file
 		ReadKineticNeutralParams();
+    //Initiate fields
     uSi.x = 0;
     uSi.y = 0;
     uSi.z = 0;
@@ -32,10 +36,12 @@ int KineticNeutrals::InitKineticNeutrals(bool restart){
 		Sn = 0, Spe = 0, Sux = 0, Suz = 0, Spi = 0;
     u0_x_ion = 0, u0_z_ion = 0;
     //uSi.setBoundary("dirichlet_o2(0.)");
+    //Read oci rand rhos used for normalizing and denormalizing in PISAM
     oci = hesel_para_.oci();
     rhos = hesel_para_.rhos();
-		//Allocate Buffer
+		//Allocate Buffers
 		Allocate_buffers();
+    //Create intercommunicator
 		InitIntercommunicator();
 		//Make the initial communication.
 		//This will give the initial fields to the kinetic model which will run
@@ -45,6 +51,7 @@ int KineticNeutrals::InitKineticNeutrals(bool restart){
       MPI_Bcast(&oci, 1, MPI_DOUBLE, MPI_ROOT, intercomm);
 			MPI_Bcast(&rhos, 1, MPI_DOUBLE, MPI_ROOT, intercomm);
 		}
+    //PISAM uses the fluid speed which is calculated to lowest order
     Calculate_ion_fluid_speed();
     Mpi_send(send_buf, n);
     Mpi_send(send_buf, te);
@@ -52,6 +59,7 @@ int KineticNeutrals::InitKineticNeutrals(bool restart){
     Mpi_send(send_buf, u0_x_ion);
     Mpi_send(send_buf, u0_z_ion);
     if (restart){
+      //If restarting send the starttime to PISAM
       MPI_Bcast(&step_starttime, 1, MPI_DOUBLE, 0, intercomm);
       t_end += step_starttime;
     }
@@ -61,16 +69,27 @@ int KineticNeutrals::InitKineticNeutrals(bool restart){
     Mpi_receive(recv_buf, Suz, 3%python_size);
 		Mpi_receive(recv_buf, Spi, 4%python_size);
     //Monitor fields
-    SAVE_REPEAT3(Sn,Spe,Spi);
+    //For some reason the PVODE solver fails when more than three fields are
+    //monitored using only af few processors in HESEL. Hence this precaution.
+    //Maybe parallel netCDF support in the netCDF installation can fix it?
+    if (app_size < 32){
+      SAVE_REPEAT3(Sn,Spe,Spi);
+    }
+    else{
+      SAVE_REPEAT5(Sn,Spe,Spi,Sux,Suz);
+    }
   return 0;
 }
 
 int KineticNeutrals::ReadKineticNeutralParams(){
+    //Get the dictionary associated with root options
     Options* root_options = Options::getRoot();
     root_options->get("mxg", mxg, 1);
     root_options->get("t_end", t_end, 0);
+    //Get the dictionary associated kinetic neutrals
 		Options* kinetic_neutral_options = Options::getRoot()->getSection("kinetic_neutrals");
-		OPTION(kinetic_neutral_options, dt_min, 0.0);
+    //Read the minimum timestep for neutral model. Default is oci^-1
+		OPTION(kinetic_neutral_options, dt_min, 1.0);
     return 0;
 }
 
