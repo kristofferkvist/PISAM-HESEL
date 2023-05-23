@@ -268,7 +268,7 @@ class Simulator():
     def run_transient(self):
         #Convergence parameters - just play with them and ajust after your needs.
         self.transient_step_lengths = np.array([50, 10, 1])
-        self.convergence_thresholds = np.array([0.01, 0.005, 0.005])
+        self.convergence_thresholds = np.array([0.01, 0.01, 0.01])
         self.convergence_max_counts = np.array([3, 5, 10])
         loop_size = 100
         self.convergence_threshold = 0.01

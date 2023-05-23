@@ -44,8 +44,8 @@ class Domain:
         self.ion_source_momentum_y = np.zeros_like(self.electron_source_particle)
         self.ion_source_energy = np.zeros_like(self.electron_source_particle)
         #Init Wall time monitoration
-        self.time_array = np.zeros(9)
-        self.wall_times = np.zeros(8)
+        self.time_array = np.zeros(11)
+        self.wall_times = np.zeros(10)
         #The very last timestep of a simulation used for the restart option
         self.last_plasma_timestep_length = 0
         self.T_wall = T_wall
