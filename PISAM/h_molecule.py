@@ -4,9 +4,9 @@ import pickle
 from make_tables import Tables_1d
 
 class H_molecule(Species):
-    def __init__(self, inflow_rate, N_max, temperature, domain, diss_product, table_dict, bin_edges_x, bin_edges_vs, velocity_domains, bin_edges_T, absorbtion_coefficient, wall_boundary):
+    def __init__(self, inflow_rate, N_max, temperature, domain, diss_product, table_dict, absorbtion_coefficient, wall_boundary):
         #Call the init function of the parent class Species
-        super().__init__(domain.d_molecule_mass, inflow_rate, N_max, temperature, domain, absorbtion_coefficient, wall_boundary, bin_edges_x, bin_edges_vs, velocity_domains)
+        super().__init__(domain.d_molecule_mass, inflow_rate, N_max, temperature, domain, absorbtion_coefficient, wall_boundary)
         #The number of reactions for atoms, not including ionization which is treated by weight reduction.
         self.num_react = 5
         #Associate the names of the included reactions with a unique integer in the range [1-n]
@@ -34,8 +34,10 @@ class H_molecule(Species):
         self.energy_loss_b3 = 10.62
         self.fragment_energy_b3= 2.75
         #######Diagnostics#########
-        self.Sn_this_step = np.zeros(self.domain.plasma_dim_x)
+        #self.Sn_this_step = np.zeros(self.domain.plasma_dim_x)
         #######Diagnostics#########
+        self.record = False
+        self.molecule = True
 
     #Calculate the probability of molecular ion dissociation (MID) for each molecule
     def probs_MID(self):
@@ -105,6 +107,7 @@ class H_molecule(Species):
         #Using np.add.at rather than self.source[x_inds, y_inds] = self.source[x_inds, y_inds] + norm_weight
         #is important to allow for identical pairs of indices i.e. neutrals reacting in the same grid cell
         #of the plasma sim.
+        self.domain.total_plasma_source = self.domain.total_plasma_source + np.sum(norm_weights)
         np.add.at(self.domain.electron_source_particle, (inds_x, inds_y), norm_weights)
         #Remember that fragments are flying opposite to each other, hence the (-)
         np.add.at(self.domain.ion_source_momentum_x, (inds_x, inds_y), self.domain.d_ion_mass*(-1)*vxs_new*norm_weights)

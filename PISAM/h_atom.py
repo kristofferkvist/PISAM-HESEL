@@ -13,9 +13,9 @@ from make_tables import Tables_2d
 from make_tables import Tables_2d_T_n
 
 class H_atom(Species):
-    def __init__(self, inflow_rate, N_max, temperature, domain, table_dict, bin_edges_x, bin_edges_vs, velocity_domains, bin_edges_T, absorbtion_coefficient, min_weight, wall_boundary):
+    def __init__(self, inflow_rate, N_max, temperature, domain, table_dict, absorbtion_coefficient, min_weight, wall_boundary):
         #Call the init function of the parent class Species
-        super().__init__(domain.d_ion_mass, inflow_rate, N_max, temperature, domain, absorbtion_coefficient, wall_boundary, bin_edges_x, bin_edges_vs, velocity_domains)
+        super().__init__(domain.d_ion_mass, inflow_rate, N_max, temperature, domain, absorbtion_coefficient, wall_boundary)
         #The number of reactions for atoms, not including ionization which is treated by weight reduction.
         self.num_react = 2
         #Associate the names of the included reactions with a unique integer in the range [1-n]
@@ -52,23 +52,25 @@ class H_atom(Species):
         #######Diagnostics#########
         #Keep track of atoms that have undergone charge exchange for diagnostic purposes
         self.cxed = np.zeros(N_max).astype(np.bool_)
-        self.Sn_this_step = np.zeros(self.domain.plasma_dim_x)
-        self.Sn_this_step_cx = np.zeros(self.domain.plasma_dim_x)
+        #self.Sn_this_step = np.zeros(self.domain.plasma_dim_x)
+        #self.Sn_this_step_cx = np.zeros(self.domain.plasma_dim_x)
+        self.E_cx_gain = 0
+        self.E_loss_ion = 0
         #######Diagnostics#########
         self.min_weight = min_weight
 
     def strip(self):
         active_old, mi_new, mi_old = super().strip()
-        self.cxed[0:mi_new] = self.cxed[0:mi_old][self.active[0:mi_old]]
+        self.cxed[0:mi_new] = self.cxed[0:mi_old][active_old]
         self.cxed[mi_new:mi_old] = False
 
     #Override remove for atoms, to monitor cx'ed and not cx'ed atoms individually for diagnostic purposes
     def remove(self, removed):
         mi = self.max_ind
         self.cxed[0:mi][removed] = False
-        cx_removed_mask = removed & self.cxed[0:mi]
-        inds_x_cx = self.plasma_inds_x[0:mi][cx_removed_mask]
-        np.add.at(self.Sn_this_step_cx, inds_x_cx, -self.norm_weight[0:mi][cx_removed_mask])
+        #cx_removed_mask = removed & self.cxed[0:mi]
+        #inds_x_cx = self.plasma_inds_x[0:mi][cx_removed_mask]
+        #np.add.at(self.Sn_this_step_cx, inds_x_cx, -self.norm_weight[0:mi][cx_removed_mask])
         super().remove(removed)
 
     def absorb(self, absorbed):
@@ -121,16 +123,18 @@ class H_atom(Species):
         #Using np.add.at rather than self.source[x_inds, y_inds] = self.source[x_inds, y_inds] + norm_weight
         #is important to allow for identical pairs of indices i.e. neutrals reacting in the same grid cell
         #of the plasma sim.
+        self.domain.total_plasma_source = self.domain.total_plasma_source + np.sum(norm_weight_loss)
         np.add.at(self.domain.electron_source_particle, (inds_x, inds_y), norm_weight_loss)
         np.add.at(self.domain.ion_source_momentum_x, (inds_x, inds_y), self.domain.d_ion_mass*self.vx[0:self.max_ind]*norm_weight_loss)
         np.add.at(self.domain.ion_source_momentum_y, (inds_x, inds_y), self.domain.d_ion_mass*self.vy[0:self.max_ind]*norm_weight_loss)
         np.add.at(self.domain.electron_source_energy, (inds_x, inds_y), -13.6*norm_weight_loss)
         np.add.at(self.domain.ion_source_energy, (inds_x, inds_y), self.E[0:self.max_ind]*norm_weight_loss)
+        self.E_loss_ion = self.E_loss_ion + np.sum(self.E[0:self.max_ind]*norm_weight_loss)
         #######Diagnostics#########
-        np.add.at(self.Sn_this_step, inds_x, -norm_weight_loss)
-        inds_x_cx = self.plasma_inds_x[0:self.max_ind][self.cxed[0:self.max_ind]]
-        norm_weight_loss_cx = norm_weight_loss[self.cxed[0:self.max_ind]]
-        np.add.at(self.Sn_this_step_cx, inds_x_cx, -norm_weight_loss_cx)
+        #np.add.at(self.Sn_this_step, inds_x, -norm_weight_loss)
+        #inds_x_cx = self.plasma_inds_x[0:self.max_ind][self.cxed[0:self.max_ind]]
+        #norm_weight_loss_cx = norm_weight_loss[self.cxed[0:self.max_ind]]
+        #np.add.at(self.Sn_this_step_cx, inds_x_cx, -norm_weight_loss_cx)
         #######Diagnostics#########
 
     #Helper methos for cx. It rotates the axis of a coordinate system theta_prime degrees around
@@ -154,8 +158,8 @@ class H_atom(Species):
     def cx(self, cxed):
         #######Diagnostics#########
         #Check which atoms that are cxed for the first time.
-        new_cx_mask = cxed & (self.cxed[0:self.max_ind] != True)
-        np.add.at(self.Sn_this_step_cx, self.plasma_inds_x[0:self.max_ind][new_cx_mask], self.norm_weight[0:self.max_ind][new_cx_mask])
+        #new_cx_mask = cxed & (self.cxed[0:self.max_ind] != True)
+        #np.add.at(self.Sn_this_step_cx, self.plasma_inds_x[0:self.max_ind][new_cx_mask], self.norm_weight[0:self.max_ind][new_cx_mask])
         self.cxed[0:self.max_ind][cxed] = True
         #Change the birth place of the particle. This is used for mean free path diagnostics
         self.born_x[0:self.max_ind][cxed] = self.x[0:self.max_ind][cxed]
@@ -229,6 +233,7 @@ class H_atom(Species):
         np.add.at(self.domain.ion_source_momentum_x, (inds_x, inds_y), self.domain.d_ion_mass*(-vx_new + vx_old)*self.norm_weight[0:self.max_ind][cxed])
         np.add.at(self.domain.ion_source_momentum_y, (inds_x, inds_y), self.domain.d_ion_mass*(-vy_new + vy_old)*self.norm_weight[0:self.max_ind][cxed])
         np.add.at(self.domain.ion_source_energy, (inds_x, inds_y), (self.E[0:self.max_ind][cxed] - self.domain.kinetic_energy(vx_new, vy_new, vz_new, self.domain.d_ion_mass))*self.norm_weight[0:self.max_ind][cxed])
+        self.E_cx_gain = self.E_cx_gain - np.sum((self.E[0:self.max_ind][cxed] - self.domain.kinetic_energy(vx_new, vy_new, vz_new, self.domain.d_ion_mass))*self.norm_weight[0:self.max_ind][cxed])
 
     #Calculate sources from excitations and add them to the source arrays in domain
     #This reaction is simple as it only acts as an electron heat sink. Nothing else.

@@ -14,7 +14,7 @@ import netCDF4 as nc
 import pickle
 
 class Species():
-    def __init__(self, mass, inflow_rate, N_max, temperature_init, domain, absorbtion_coefficient, wall_boundary, bin_edges_x, bin_edges_vs, velocity_domains):
+    def __init__(self, mass, inflow_rate, N_max, temperature_init, domain, absorbtion_coefficient, wall_boundary):
         #Array size for memory allocation
         self.N_max = N_max
         #An array of all vacant indices i.e. indices of non-active particles less than max_ind
@@ -58,6 +58,13 @@ class Species():
         #Wall absorption coefficient
         self.absorbtion_coefficient = absorbtion_coefficient
         self.wall_boundary = wall_boundary
+        #Test stuff
+        self.total_inflow = 0
+        self.inner_edge_loss = 0
+        self.reflection_loss = 0
+        self.E_loss_IE = 0
+        self.E_init = 0
+        self.E_absorb = 0
         #Some diagnostics not currently in use
         """
         self.bin_edges_x = bin_edges_x
@@ -80,7 +87,8 @@ class Species():
     #self.active = [True  True  True  True False False False False False]
     def strip(self):
         mi_old = self.max_ind
-        active_old = self.active[0:mi_old] #This is used for species-specific arrays like cxed in h_atoms
+        active_old = np.zeros(mi_old).astype(np.bool_) #This is used for species-specific arrays like cxed in h_atoms
+        active_old[:] = self.active[0:mi_old]
         inactive = np.sum(~self.active[0:mi_old])
         self.max_ind = self.max_ind - inactive
         mi_new = self.max_ind
@@ -171,6 +179,9 @@ class Species():
         init_vz = self.initialize_vyz(n_inflow, self.T_init)
         #Avoid rounding error by asserting an initial weight different from one (allways larger than one, but usually only a little)
         inflow_norm_weight = np.ones(n_inflow)*self.inflow_rate*self.domain.dt/n_inflow
+        #print("dt = " + str(self.domain.dt))
+        #print("n_inflow = " + str(n_inflow))
+        #print("sum of norm weight = " + str(np.sum(inflow_norm_weight)))
         inflow_inds_x = (np.ones(n_inflow)*self.domain.plasma_dim_x-1).astype(np.int32)
         inflow_inds_y = ((init_y-self.domain.y_min)/self.domain.dy).astype(np.int32)
         return init_x, init_y, init_vx, init_vy, init_vz, inflow_norm_weight, inflow_inds_x, inflow_inds_y
@@ -180,7 +191,9 @@ class Species():
     #indices available it adds particles by increasing self.max_ind
     def inflow(self, xs, ys, vxs, vys, vzs, inflow_norm_weight, inflow_inds_x, inflow_inds_y):
         #######Diagnostics#########
-        np.add.at(self.Sn_this_step, inflow_inds_x, inflow_norm_weight)
+        #np.add.at(self.Sn_this_step, inflow_inds_x, inflow_norm_weight)
+        self.total_inflow = self.total_inflow + np.sum(inflow_norm_weight)
+        self.E_init = self.E_init + np.sum(self.domain.kinetic_energy(vxs, vys, vzs, self.mass)*inflow_norm_weight)
         #######Diagnostics#########
         lv = self.vacant_indices.size
         n_inflow = xs.size
@@ -243,6 +256,8 @@ class Species():
         outer_wall_mask = self.x[0:self.max_ind] > self.domain.x_max #Particles that move beyond the outer boundary
         #Remove those which are not reflected
         mask = (self.active[0:self.max_ind]) & (outer_wall_mask) & (reflected_mask != True)
+        self.reflection_loss = self.reflection_loss + np.sum(self.norm_weight[0:self.max_ind][mask])
+        self.E_absorb = self.E_absorb + np.sum(self.E[0:self.max_ind][mask]*self.norm_weight[0:self.max_ind][mask])
         self.remove(mask)
         #Reflect those that are reflected
         mask = (self.active[0:self.max_ind]) & (outer_wall_mask) & (reflected_mask)
@@ -251,6 +266,8 @@ class Species():
         self.vx[0:self.max_ind][mask] = -self.vx[0:self.max_ind][mask]
         #If they move beyond lcfs assume ionized
         lcfs = self.x[0:self.max_ind] < self.domain.x_min
+        self.inner_edge_loss = self.inner_edge_loss + np.sum(self.norm_weight[0:self.max_ind][lcfs])
+        self.E_loss_IE = self.E_loss_IE + np.sum(self.E[0:self.max_ind][lcfs]*self.norm_weight[0:self.max_ind][lcfs])
         self.remove(lcfs)
 
         if self.wall_boundary:
@@ -260,20 +277,20 @@ class Species():
             #y_lim = np.zeros(self.max_ind)
             self.wall_lim[0:self.max_ind] = np.sqrt(2*self.domain.r_minor*x_from_wall - np.power(x_from_wall, 2))
             outer_wall_mask = (self.active[0:self.max_ind]) & (np.logical_or(self.true_y[0:self.max_ind] > self.wall_lim[0:self.max_ind], self.true_y[0:self.max_ind] < -self.wall_lim[0:self.max_ind])) & (self.vx[0:self.max_ind] < 0)
-            mask = outer_wall_mask & reflected_mask
-            self.bounce_y(mask, x_from_wall, self.wall_lim[0:self.max_ind])
+            #mask = outer_wall_mask & reflected_mask
+            #self.bounce_y(mask, x_from_wall, self.wall_lim[0:self.max_ind])
             mask = outer_wall_mask & (reflected_mask != True)
             self.absorb(mask)
 
             #Thn the toroidal direction
             self.wall_lim[0:self.max_ind] = np.sqrt(2*self.domain.r_minor*x_from_wall - np.power(x_from_wall, 2))
             outer_wall_mask = (self.active[0:self.max_ind]) & (np.logical_or(self.z[0:self.max_ind] > self.wall_lim[0:self.max_ind], self.z[0:self.max_ind] < -self.wall_lim[0:self.max_ind])) & (self.vx[0:self.max_ind] < 0)
-            mask = outer_wall_mask & reflected_mask
-            self.bounce_z(mask, x_from_wall, self.wall_lim[0:self.max_ind])
+            #mask = outer_wall_mask & reflected_mask
+            #self.bounce_z(mask, x_from_wall, self.wall_lim[0:self.max_ind])
             mask = outer_wall_mask & (reflected_mask != True)
             self.absorb(mask)
 
-    #Perform the reflection and reset the relevant values
+    """#Perform the reflection and reset the relevant values
     def bounce_y(self, bounced, x_from_wall, y_lim):
         self.bounce(bounced, x_from_wall, y_lim)
         new_x = self.initialize_x(np.sum(bounced))
@@ -319,7 +336,7 @@ class Species():
         self.vy[0:self.max_ind][bounced] = self.vy[0:self.max_ind][bounced] - 2*proj_y
         self.vz[0:self.max_ind][bounced] = self.vz[0:self.max_ind][bounced] - 2*proj_z
         v_mag_after = np.sqrt(np.power(self.vx[0:self.max_ind][bounced], 2) + np.power(self.vy[0:self.max_ind][bounced], 2) + np.power(self.vz[0:self.max_ind][bounced], 2))
-        np.testing.assert_allclose(v_mag_before, v_mag_after)
+        np.testing.assert_allclose(v_mag_before, v_mag_after)"""
 
     #Particles that are absorbed due to the "wall" condition are reemitted at wall temperature
     def absorb(self, absorbed):
@@ -341,7 +358,7 @@ class Species():
         #self.save_to_hist_free_path(removed)
         mi = self.max_ind
         inds_x = self.plasma_inds_x[0:mi][removed]
-        np.add.at(self.Sn_this_step, inds_x, -self.norm_weight[0:mi][removed])
+        #np.add.at(self.Sn_this_step, inds_x, -self.norm_weight[0:mi][removed])
         self.active[0:mi][removed] = False
         self.x[0:mi][removed] = self.domain.x_max+self.domain.dx
         self.y[0:mi][removed] = self.domain.y_max+self.domain.dy
@@ -423,9 +440,8 @@ class Species():
         init_x, init_y, init_vx, init_vy, init_vz, inflow_norm_weight, inflow_inds_x, inflow_inds_y = self.init_pos_vs()
         self.inflow(init_x, init_y, init_vx, init_vy, init_vz, inflow_norm_weight, inflow_inds_x, inflow_inds_y)
         self.domain.time_array[1] = time.time()
-        if (np.sum(self.active[0:self.max_ind]) > 1 and self.vacant_indices.size/np.sum(self.active[0:self.max_ind]) > 0.1):
+        if (np.sum(self.active[0:self.max_ind]) > 1 and self.vacant_indices.size/np.sum(self.active[0:self.max_ind]) > 0.05):
             self.strip()
-            print("#################################Im stripping#######################")
         self.domain.time_array[2] = time.time()
         self.set_Te()
         self.set_Ti()

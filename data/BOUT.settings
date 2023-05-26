@@ -7,7 +7,7 @@ incintshear = false		# type: bool
 mxg = 2		# type: int, doc: Number of guard cells on each side in X
 myg = 0		# type: int, doc: Number of guard cells on each side in Y
 non_uniform = true		# type: bool
-nout = 1		# type: int, doc: Number of output steps
+nout = 10		# type: int, doc: Number of output steps
 optionfile = BOUT.inp		# type: string
 periodicx = false		# type: bool, doc: Make grid periodic in X?
 restart = false		# type: bool, doc: Load state from restart files?
@@ -353,12 +353,12 @@ shiftinput = false		# type: bool
 shiftoutput = false		# type: bool
 
 [run]
-finished = Tue May 23 20:21:59 2023
+finished = Fri May 26 11:47:07 2023
 		# not used , from: 
 revision = ab69d52f362dcaaddb22f3bd3b16aa7bab924d84		# not used , from: 
-run_id = 709be14b-0bba-442a-8e63-4b9b65e03664		# not used , from: Solver
+run_id = ef581361-fd23-4e64-af9d-1ea17eb05f75		# not used , from: Solver
 run_restart_from = zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz		# not used , from: Solver
-started = Tue May 23 20:20:16 2023
+started = Fri May 26 11:45:30 2023
 		# not used , from: 
 version = 4.4.2		# not used , from: 
 
@@ -393,7 +393,7 @@ monitor_timestep = false		# type: bool
 mudq = 136		# type: int
 mukeep = 0		# type: int
 mxstep = 1000000		# type: int
-nout = 1		# type: int, doc: Number of output steps. Overrides global setting.
+nout = 10		# type: int, doc: Number of output steps. Overrides global setting.
 output_step = 3		# type: BoutReal, doc: Output time step size. Overrides global TIMESTEP setting.
 precon_dimens = 50		# type: int
 precon_tol = 0.0001		# type: BoutReal

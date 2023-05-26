@@ -41,6 +41,8 @@ def main(argv):
     simulator = Simulator(data_folder, manager.oci, manager.rhos, rank, manager.sub_comm, manager.procs_python, manager.n, manager.Te, manager.Ti, manager.u0_x_ion, manager.u0_y_ion, optDIR, manager.weight)
     manager.simulator = simulator
     simulator.initiate_sim(restart, manager.flag_initialized)
+    simulator.record_before_step()
+    simulator.record_iter = simulator.record_iter + 1
     #Send the source terms obtained as part of simulator initiation
     manager.send_initial_source_terms()
 
@@ -58,7 +60,8 @@ def main(argv):
         if (rank == 0):
             times[1] = time.time()
         #Recording data for density and flux monitoration
-        simulator.record_before_step(manager.t)
+        if (manager.t > (simulator.record_iter+1)*simulator.timestep):
+            simulator.record_before_step()
         #Save the end-time of the previous timestep
         manager.t_old_new[0] = manager.t_old_new[1]
         #Set the new sim time of the HESEL simulation
@@ -83,7 +86,9 @@ def main(argv):
         if (rank == 0):
             times[5] = time.time()
         #Recording data for flux monitoration
-        simulator.record_after_step(manager.t, (manager.t_old_new[1]-manager.t_old_new[0])/manager.oci)
+        if (manager.t > (simulator.record_iter+1)*simulator.timestep):
+            #simulator.record_after_step((manager.t_old_new[1]-manager.t_old_new[0])/manager.oci)
+            simulator.record_iter = simulator.record_iter + 1
         if (rank == 0):
             times[6] = time.time()
         #Send the new sources to HESEL sources. This step involves reducing, normalizing and smoothing.

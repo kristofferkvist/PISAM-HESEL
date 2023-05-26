@@ -25,7 +25,7 @@ public:
 	//Electron sources
 	Field3D Sn, Spe;
 	//Ion sources
-	Field3D Sux, Suz, Spi;
+	Field3D Sux, Suz, SEi, Spi;
 	Field3D u_E_x, u_E_z;
 	Vector3D uSi;                   // Leading order ion drifts due to neutrals
 
@@ -47,6 +47,7 @@ private:
 	int Calculate_ion_fluid_speed();
 	int Rhs_calc_velocity_sources();
 	int PrintField(Field3D f);
+	BoutReal MeanField(Field3D f);
 
 	//Variables supporting MPI intercommunicator
   MPI_Comm intercomm, sub_comm;

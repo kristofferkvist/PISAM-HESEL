@@ -2,7 +2,7 @@
 #==============================================================================
 t_end    = timestep*nout  # total simulation time
 timestep = 3	          # time step length of outputted data
-nout     = 1	          # number of outputted time steps
+nout     = 10	          # number of outputted time steps
 
 myg      = 0              # no need for Y communications, so no guard cells
 mxg      = 2              # guard cell number in the boundary of local CPU
@@ -229,7 +229,7 @@ bndry_all      = neumann
 scale          = 1.0
 n_inner        = 1.5       # inner boundary value for density
 n_bg           = 0.1       # background density
-x_shift_n      = 2.93794   # shift x in order to set n_lcfs = n0, for n_inner=1.5, n_bg=0.1 and step_width=10.
+x_shift_n      = 2.93794   # shift x in order to set n_lcfs = n0 for n_inner=1.5, n_bg=0.1 and step_width=10.
 step_width     = 10.       # step width for tanh function
 
 function       = 0.5 * (n_inner - n_bg) * (1 - tanh( (hesel:xr - x_shift_n)/step_width)) + n_bg
@@ -249,7 +249,7 @@ function       = (0.5 *(sqrt(pe_inner) - pe_bg) * (1 - tanh( (hesel:xr - x_shift
 scale          = 1.0
 pi_inner       = 9.0       # inner boundary value for ion pressure
 pi_bg          = 0.01      # background ion pressure
-x_shift_pi     = -3.51585  # shift x in order to set pi_lcfs = n0*Ti0, for pi_inner=8, pi_bg=0.01 and step_width=10.
+x_shift_pi     = -3.51585  # shift x in order to set pi_lcfs = n0*Ti0, for pi_inner=9, pi_bg=0.01 and step_width=10.
 step_width     = 10.       # step width for tanh function
 
 line_slope     = (sqrt(pi_inner)-1)/hesel:edge_width

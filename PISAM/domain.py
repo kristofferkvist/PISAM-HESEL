@@ -34,7 +34,7 @@ class Domain:
         #The wall distance at the outer domain boundary.
         #See the subsection "Neutral Injection and Boundary Conditions" in
         #chapter 6 of my thesis for an explanation of this parameter.
-        self.x_max_wall_dist_poloidal = (self.r_minor - np.sqrt(self.r_minor*self.r_minor - np.power(self.y_max - self.y_min, 2)/4))
+        self.x_max_wall_dist_poloidal = 1.5*(self.r_minor - np.sqrt(self.r_minor*self.r_minor - np.power(self.y_max - self.y_min, 2)/4))
         #Normalization constant of plasma densities
         self.n0 = n0
         #Init source grids
@@ -49,6 +49,7 @@ class Domain:
         #The very last timestep of a simulation used for the restart option
         self.last_plasma_timestep_length = 0
         self.T_wall = T_wall
+        self.total_plasma_source = 0
 
     #Sources are set to zero at te end of each timestep after being sent to HESEL
     def set_sources_zero(self):

@@ -39,8 +39,7 @@ class Simulator():
         self.weight = weight
         self.set_phys_consts()
         self.read_input_params()
-        self.set_options_for_histrograms()
-        self.set_dictionaries()
+        self.get_dictionaries()
         self.init_objects()
         self.initiate_recording()
 
@@ -93,7 +92,8 @@ class Simulator():
     #Initiate the recording by creating buffers for reduction between the parallel processes
     #and creating a netCDF-file with the parameters you want to save.
     def initiate_recording(self):
-        self.record_iter = 0
+        self.init_speed_dists()
+        self.record_iter = -1
         self.n_atoms = np.zeros((self.domain.plasma_dim_x, self.domain.plasma_dim_y)).astype(np.float32)
         self.n_atoms_cxed = np.zeros((self.domain.plasma_dim_x, self.domain.plasma_dim_y)).astype(np.float32)
         self.n_molecules = np.zeros((self.domain.plasma_dim_x, self.domain.plasma_dim_y)).astype(np.float32)
@@ -107,14 +107,24 @@ class Simulator():
             self.buff_atom_source = np.zeros(self.domain.plasma_dim_x).astype(np.float32)
             self.buff_atom_cx_source = np.zeros(self.domain.plasma_dim_x).astype(np.float32)
             self.buff_molecule_source = np.zeros(self.domain.plasma_dim_x).astype(np.float32)
+            self.buff_speed_dist_atom = np.zeros((self.velocity_domains, self.n_bins_atom)).astype(np.float32)
+            self.buff_speed_dist_atom_cx = np.zeros((self.velocity_domains, self.n_bins_atom)).astype(np.float32)
+            self.buff_speed_dist_mol = np.zeros((self.velocity_domains, self.n_bins_mol)).astype(np.float32)
+
             self.n_atoms_x_before = np.zeros(self.domain.plasma_dim_x).astype(np.float32)
             self.n_atoms_cxed_x_before = np.zeros(self.domain.plasma_dim_x).astype(np.float32)
             self.n_molecules_x_before = np.zeros(self.domain.plasma_dim_x).astype(np.float32)
+
             self.nc_dat = nc.Dataset(self.optDIR + '/neutral_diagnostics.nc', 'w', 'NETCDF4')
             self.nc_dat.createDimension('x', self.domain.plasma_dim_x)
             self.nc_dat.createDimension('y', self.domain.plasma_dim_y)
-            self.nc_dat.createDimension('t', self.nout)
+            self.nc_dat.createDimension('t', self.nout+1)
             self.nc_dat.createDimension('scalar', 1)
+            self.nc_dat.createDimension('v_doms', self.velocity_domains)
+            self.nc_dat.createDimension('n_bins_atom', self.n_bins_atom)
+            self.nc_dat.createDimension('n_bins_mol', self.n_bins_mol)
+            self.nc_dat.createDimension('bin_edges_atom', self.bin_edges_atom.size)
+            self.nc_dat.createDimension('bin_edges_mol', self.bin_edges_mol.size)
 
             self.molecule_injection_rate_var = self.nc_dat.createVariable('molecule_injection_rate', 'float32', ('scalar', ))
             self.molecule_injection_rate_var[0] = np.array(self.H_molecule_injection_rate).astype(np.float32)
@@ -122,16 +132,39 @@ class Simulator():
             self.weight_var[0] = np.array(self.weight).astype(np.float32)
             self.Ly_var = self.nc_dat.createVariable('Ly', 'float32', ('scalar', ))
             self.Ly_var[0] = np.array(self.Ly).astype(np.float32)
+            #E dist data
+            self.bin_edges_atom_var = self.nc_dat.createVariable('bin_edges_atom', 'float32', ('bin_edges_atom', ))
+            self.bin_edges_atom_var[:] = self.bin_edges_atom.astype(np.float32)
+            self.bin_edges_mol_var = self.nc_dat.createVariable('bin_edges_mol', 'float32', ('bin_edges_mol', ))
+            self.bin_edges_mol_var[:] = self.bin_edges_mol.astype(np.float32)
+            self.speed_dist_atom_var = self.nc_dat.createVariable('speed_dist_atom', 'float32', ('t', 'v_doms', 'n_bins_atom'))
+            self.speed_dist_atom_cx_var = self.nc_dat.createVariable('speed_dist_atom_cx', 'float32', ('t', 'v_doms', 'n_bins_atom'))
+            self.speed_dist_mol_var = self.nc_dat.createVariable('speed_dist_mol', 'float32', ('t', 'v_doms', 'n_bins_mol'))
+
             self.step_length_var = self.nc_dat.createVariable('dt', 'float32', ('t', ))
-            self.n_atom_var = self.nc_dat.createVariable('n_atom_x_y_t', 'float32', ('t', 'x', 'y'))
-            self.n_atom_cx_var = self.nc_dat.createVariable('n_atom_cx_x_y_t', 'float32', ('t', 'x', 'y'))
-            self.n_molecule_var = self.nc_dat.createVariable('n_molecule_x_y_t', 'float32', ('t', 'x', 'y'))
-            self.n_atom_diff_var = self.nc_dat.createVariable('n_atom_x_diff', 'float32', ('t', 'x'))
+            self.n_atom_var = self.nc_dat.createVariable('n_atom', 'float32', ('t', 'x', 'y'))
+            self.n_atom_cx_var = self.nc_dat.createVariable('n_atom_cx', 'float32', ('t', 'x', 'y'))
+            self.n_molecule_var = self.nc_dat.createVariable('n_molecule', 'float32', ('t', 'x', 'y'))
+
+            """self.n_atom_diff_var = self.nc_dat.createVariable('n_atom_x_diff', 'float32', ('t', 'x'))
             self.n_atom_cx_diff_var = self.nc_dat.createVariable('n_atom_cx_x_diff', 'float32', ('t', 'x'))
             self.n_molecule_diff_var = self.nc_dat.createVariable('n_molecule_x_diff', 'float32', ('t', 'x'))
             self.n_atom_source_var = self.nc_dat.createVariable('n_atom_x_source', 'float32', ('t', 'x'))
             self.n_atom_cx_source_var = self.nc_dat.createVariable('n_atom_cx_x_source', 'float32', ('t', 'x'))
-            self.n_molecule_source_var = self.nc_dat.createVariable('n_molecule_x_source', 'float32', ('t', 'x'))
+            self.n_molecule_source_var = self.nc_dat.createVariable('n_molecule_x_source', 'float32', ('t', 'x'))"""
+        else:
+            self.buff_atom_density =           None
+            self.buff_atom_density_cx =        None
+            self.buff_molecule_density =       None
+            self.buff_atom_density_diff =      None
+            self.buff_atom_cx_density_diff =   None
+            self.buff_molecule_density_diff =  None
+            self.buff_atom_source =            None
+            self.buff_atom_cx_source =         None
+            self.buff_molecule_source =        None
+            self.buff_speed_dist_atom =        None
+            self.buff_speed_dist_atom_cx =     None
+            self.buff_speed_dist_mol =         None
 
     #Set the plasma fields seen by the neutrals of PISAM
     def set_fields(self, n, Te, Ti, u0_x_ion, u0_y_ion):
@@ -153,9 +186,9 @@ class Simulator():
     def sim_step(self, t_plasma):
         self.domain.set_sources_zero()
         #######Diagnostics#########
-        self.h_molecules.Sn_this_step.fill(0)
-        self.h_atoms.Sn_this_step.fill(0)
-        self.h_atoms.Sn_this_step_cx.fill(0)
+        #self.h_molecules.Sn_this_step.fill(0)
+        #self.h_atoms.Sn_this_step.fill(0)
+        #self.h_atoms.Sn_this_step_cx.fill(0)
         #######Diagnostics#########
         #Calculate the amount of steps that can be conducted with the current step_length
         #without overshooting the current time in HESEL.
@@ -228,7 +261,7 @@ class Simulator():
         self.H_atom_N_max = int(eval(kinetic_neutral_dict['H_atom_N_max']))
         self.H_molecule_temperature = float(eval(kinetic_neutral_dict['H_molecule_temperature']))
         self.H_atom_temperature = float(eval(kinetic_neutral_dict['H_atom_temperature']))
-        self.H_molecule_injection_rate = int(eval(kinetic_neutral_dict['H_molecule_injection_rate']))
+        self.H_molecule_injection_rate = float(eval(kinetic_neutral_dict['H_molecule_injection_rate']))
         self.H_molecule_N_max = int(eval(kinetic_neutral_dict['H_molecule_N_max']))
         self.absorbtion_coefficient_atom = float(eval(kinetic_neutral_dict['wallAbsorbtionFractionAtom']))
         self.absorbtion_coefficient_molecule = float(eval(kinetic_neutral_dict['wallAbsorbtionFractionMolecule']))
@@ -237,14 +270,8 @@ class Simulator():
         self.wall_boundary_molecule = bool(eval(kinetic_neutral_dict['wall_boundary_molecule']))
         self.min_weight_atom = float(eval(kinetic_neutral_dict['min_weight_atom']))
 
-    def set_options_for_histrograms(self):
-        n_bins = 50
-        self.bin_edges_x = np.linspace(self.x_min, self.x_max, self.nx+1)
-        self.bin_edges_vs_atom = np.linspace(0, 2.5*np.sqrt(8*100*1.602e-19/(np.pi*self.MASS_D_ATOM)), n_bins)
-        self.bin_edges_vs_molecule = np.linspace(0, 2.5*np.sqrt(8*self.H_molecule_temperature*1.602e-19/(np.pi*self.MASS_D_MOLECULE)), n_bins)
-
     #Load ther dictionaries with all the tables holding reaction rates and various distributions
-    def set_dictionaries(self):
+    def get_dictionaries(self):
         with open(self.data_folder + 'h_atom_dict' + '.pkl', 'rb') as f:
             self.dict_atom = pickle.load(f)
         with open(self.data_folder + 'h_molecule_dict' + '.pkl', 'rb') as f:
@@ -257,10 +284,10 @@ class Simulator():
         self.bin_edges_T = np.arange(np.max(self.Te_init)+1)
 
     def init_atoms(self):
-        self.h_atoms = H_atom(int(self.H_atom_injection_rate/self.procs_python), self.H_atom_N_max, self.H_atom_temperature, self.domain, self.dict_atom, self.bin_edges_x, self.bin_edges_vs_atom, 5, self.bin_edges_T, self.absorbtion_coefficient_atom, self.min_weight_atom, self.wall_boundary_atom)
+        self.h_atoms = H_atom(self.H_atom_injection_rate/self.procs_python, self.H_atom_N_max, self.H_atom_temperature, self.domain, self.dict_atom, self.absorbtion_coefficient_atom, self.min_weight_atom, self.wall_boundary_atom)
 
     def init_molecules(self):
-        self.h_molecules = H_molecule(int(self.H_molecule_injection_rate/self.procs_python), self.H_molecule_N_max, self.H_molecule_temperature, self.domain, self.h_atoms, self.dict_molecule, self.bin_edges_x, self.bin_edges_vs_molecule, 5, self.bin_edges_T, self.absorbtion_coefficient_molecule, self.wall_boundary_molecule)
+        self.h_molecules = H_molecule(self.H_molecule_injection_rate/self.procs_python, self.H_molecule_N_max, self.H_molecule_temperature, self.domain, self.h_atoms, self.dict_molecule, self.absorbtion_coefficient_molecule, self.wall_boundary_molecule)
 
     #Run the transient until the chosen convergence criterion.
     #Various approaches can be chosen by adjusting the long and short
@@ -268,12 +295,10 @@ class Simulator():
     def run_transient(self):
         #Convergence parameters - just play with them and ajust after your needs.
         self.transient_step_lengths = np.array([50, 10, 1])
-        self.convergence_thresholds = np.array([0.01, 0.01, 0.01])
+        self.convergence_thresholds = np.array([0.05, 0.01, 0.01])
         self.convergence_max_counts = np.array([3, 5, 10])
         loop_size = 100
-        self.convergence_threshold = 0.01
-        self.species_list = [self.h_atoms, self.h_molecules]
-        self.h_molecules.step()
+        self.species_list = [self.h_molecules, self.h_atoms]
         for i in np.arange(self.transient_step_lengths.size):
             """if self.rank == 0:
                 print("Convergence loop = " + str(i))"""
@@ -283,6 +308,7 @@ class Simulator():
                 N_molecules_old = np.sum(self.h_molecules.norm_weight[0:self.h_molecules.max_ind][self.h_molecules.active[0:self.h_molecules.max_ind]])
                 N_atoms_old = np.sum(self.h_atoms.norm_weight[0:self.h_atoms.max_ind][self.h_atoms.active[0:self.h_atoms.max_ind]])
                 for _ in np.arange(loop_size):
+                    self.domain.t = self.domain.t + self.domain.dt
                     for s in self.species_list:
                         s.step()
                 N_molecules_new = np.sum(self.h_molecules.norm_weight[0:self.h_molecules.max_ind][self.h_molecules.active[0:self.h_molecules.max_ind]])
@@ -290,12 +316,10 @@ class Simulator():
                 """if self.rank == 0:
                     print("N molecules = " + str(N_molecules_new))
                     print("N atoms = " + str(N_atoms_new))"""
-                if (np.abs(N_molecules_old-N_molecules_new)/N_molecules_old < self.convergence_thresholds[i]) and (np.abs(N_atoms_old-N_atoms_new)/N_atoms_old < 4*self.convergence_thresholds[i]):
+                if (N_molecules_old > 0 and N_atoms_old > 0) and ((np.abs(N_molecules_old-N_molecules_new)/N_molecules_old < self.convergence_thresholds[i]) and (np.abs(N_atoms_old-N_atoms_new)/N_atoms_old < 4*self.convergence_thresholds[i])):
                     convergence_count = convergence_count + 1
                 else:
                     convergence_count = 0
-            for s in self.species_list:
-                s.strip()
 
 
     #After saturation a timestep is run to obtain the initial sources to send to HESEL
@@ -323,67 +347,104 @@ class Simulator():
 
 #############################################IO OPERATIONS######################
     #Records the neutral densities at the beginning af a PISAM iteration i.e. before stepping.
-    def record_before_step(self, t):
-        if (t > (self.record_iter+1)*self.timestep):
-            self.get_density(self.h_atoms, self.h_atoms.active, self.n_atoms)
-            self.get_density(self.h_atoms, self.h_atoms.cxed, self.n_atoms_cxed)
-            self.get_density(self.h_molecules, self.h_molecules.active, self.n_molecules)
+    def record_before_step(self):
+        self.get_density(self.h_atoms, self.h_atoms.active, self.n_atoms)
+        self.get_density(self.h_atoms, self.h_atoms.cxed, self.n_atoms_cxed)
+        self.get_density(self.h_molecules, self.h_molecules.active, self.n_molecules)
 
-            if (self.rank == 0):
-                self.sub_comm.Reduce([self.n_atoms.astype(np.float32), MPI.FLOAT], [self.buff_atom_density, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([self.n_atoms_cxed.astype(np.float32), MPI.FLOAT], [self.buff_atom_density_cx, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([self.n_molecules.astype(np.float32), MPI.FLOAT], [self.buff_molecule_density, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.get_speed_dist_atom()
+        self.get_speed_dist_mol()
 
-                self.n_atoms_x_before = np.sum(self.buff_atom_density, axis = 1)
-                self.n_atoms_cxed_x_before = np.sum(self.buff_atom_density_cx, axis = 1)
-                self.n_molecules_x_before = np.sum(self.buff_molecule_density, axis = 1)
+        self.sub_comm.Reduce([self.n_atoms.astype(np.float32), MPI.FLOAT], [self.buff_atom_density, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([self.n_atoms_cxed.astype(np.float32), MPI.FLOAT], [self.buff_atom_density_cx, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([self.n_molecules.astype(np.float32), MPI.FLOAT], [self.buff_molecule_density, MPI.FLOAT], op = MPI.SUM, root = 0)
 
-                self.n_atom_var[self.record_iter, :, :] = self.weight*self.buff_atom_density/(self.domain.dx*self.domain.dy)
-                self.n_atom_cx_var[self.record_iter, :, :] = self.weight*self.buff_atom_density_cx/(self.domain.dx*self.domain.dy)
-                self.n_molecule_var[self.record_iter, :, :] = self.weight*self.buff_molecule_density/(self.domain.dx*self.domain.dy)
-            else:
-                self.sub_comm.Reduce([self.n_atoms.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([self.n_atoms_cxed.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([self.n_molecules.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
-            self.n_atoms.fill(0)
-            self.n_atoms_cxed.fill(0)
-            self.n_molecules.fill(0)
+        self.sub_comm.Reduce([self.speed_dist_atom.astype(np.float32), MPI.FLOAT], [self.buff_speed_dist_atom, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([self.speed_dist_atom_cx.astype(np.float32), MPI.FLOAT], [self.buff_speed_dist_atom_cx, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([self.speed_dist_mol.astype(np.float32), MPI.FLOAT], [self.buff_speed_dist_mol, MPI.FLOAT], op = MPI.SUM, root = 0)
+        if (self.rank == 0):
+            """self.n_atoms_x_before = np.sum(self.buff_atom_density, axis = 1)
+            self.n_atoms_cxed_x_before = np.sum(self.buff_atom_density_cx, axis = 1)
+            self.n_molecules_x_before = np.sum(self.buff_molecule_density, axis = 1)"""
+
+            self.n_atom_var[self.record_iter+1, :, :] = self.weight*self.buff_atom_density/(self.domain.dx*self.domain.dy)
+            self.n_atom_cx_var[self.record_iter+1, :, :] = self.weight*self.buff_atom_density_cx/(self.domain.dx*self.domain.dy)
+            self.n_molecule_var[self.record_iter+1, :, :] = self.weight*self.buff_molecule_density/(self.domain.dx*self.domain.dy)
+
+            self.speed_dist_atom_var[self.record_iter+1, :, :] = self.buff_speed_dist_atom
+            self.speed_dist_atom_cx_var[self.record_iter+1, :, :] = self.buff_speed_dist_atom_cx
+            self.speed_dist_mol_var[self.record_iter+1, :, :] = self.buff_speed_dist_mol
+
+        self.n_atoms.fill(0)
+        self.n_atoms_cxed.fill(0)
+        self.n_molecules.fill(0)
 
     #Record densities after along with the losses and gains due to particle creation and removal (includes edge losses).
     #This allows us to calculate the particle flux.
-    def record_after_step(self, t, step_length):
-        if (t > (self.record_iter+1)*self.timestep):
-            self.get_density(self.h_atoms, self.h_atoms.active, self.n_atoms)
-            self.get_density(self.h_atoms, self.h_atoms.cxed, self.n_atoms_cxed)
-            self.get_density(self.h_molecules, self.h_molecules.active, self.n_molecules)
-            if self.rank == 0:
-                self.sub_comm.Reduce([self.n_atoms.astype(np.float32), MPI.FLOAT], [self.buff_atom_density, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([self.n_atoms_cxed.astype(np.float32), MPI.FLOAT], [self.buff_atom_density_cx, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([self.n_molecules.astype(np.float32), MPI.FLOAT], [self.buff_molecule_density, MPI.FLOAT], op = MPI.SUM, root = 0)
+    def record_after_step(self, step_length):
+        """self.get_density(self.h_atoms, self.h_atoms.active, self.n_atoms)
+        self.get_density(self.h_atoms, self.h_atoms.cxed, self.n_atoms_cxed)
+        self.get_density(self.h_molecules, self.h_molecules.active, self.n_molecules)"""
+        if self.rank == 0:
+            """self.sub_comm.Reduce([self.n_atoms.astype(np.float32), MPI.FLOAT], [self.buff_atom_density, MPI.FLOAT], op = MPI.SUM, root = 0)
+            self.sub_comm.Reduce([self.n_atoms_cxed.astype(np.float32), MPI.FLOAT], [self.buff_atom_density_cx, MPI.FLOAT], op = MPI.SUM, root = 0)
+            self.sub_comm.Reduce([self.n_molecules.astype(np.float32), MPI.FLOAT], [self.buff_molecule_density, MPI.FLOAT], op = MPI.SUM, root = 0)
 
-                self.sub_comm.Reduce([self.h_atoms.Sn_this_step.astype(np.float32), MPI.FLOAT], [self.buff_atom_source, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([self.h_atoms.Sn_this_step_cx.astype(np.float32), MPI.FLOAT], [self.buff_atom_cx_source, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([self.h_molecules.Sn_this_step.astype(np.float32), MPI.FLOAT], [self.buff_molecule_source, MPI.FLOAT], op = MPI.SUM, root = 0)
+            self.sub_comm.Reduce([self.h_atoms.Sn_this_step.astype(np.float32), MPI.FLOAT], [self.buff_atom_source, MPI.FLOAT], op = MPI.SUM, root = 0)
+            self.sub_comm.Reduce([self.h_atoms.Sn_this_step_cx.astype(np.float32), MPI.FLOAT], [self.buff_atom_cx_source, MPI.FLOAT], op = MPI.SUM, root = 0)
+            self.sub_comm.Reduce([self.h_molecules.Sn_this_step.astype(np.float32), MPI.FLOAT], [self.buff_molecule_source, MPI.FLOAT], op = MPI.SUM, root = 0)
 
-                self.n_atom_diff_var[self.record_iter, :] = np.sum(self.buff_atom_density, axis = 1) - self.n_atoms_x_before
-                self.n_atom_cx_diff_var[self.record_iter, :] = np.sum(self.buff_atom_density_cx, axis = 1) - self.n_atoms_cxed_x_before
-                self.n_molecule_diff_var[self.record_iter, :] = np.sum(self.buff_molecule_density, axis = 1) - self.n_molecules_x_before
-                self.n_atom_source_var[self.record_iter, :] = self.buff_atom_source
-                self.n_atom_cx_source_var[self.record_iter, :] = self.buff_atom_cx_source
-                self.n_molecule_source_var[self.record_iter, :] = self.buff_molecule_source
-                self.step_length_var[self.record_iter] = step_length
-            else:
-                self.sub_comm.Reduce([self.n_atoms.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([self.n_atoms_cxed.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([self.n_molecules.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+            self.n_atom_diff_var[self.record_iter+1, :] = np.sum(self.buff_atom_density, axis = 1) - self.n_atoms_x_before
+            self.n_atom_cx_diff_var[self.record_iter+1, :] = np.sum(self.buff_atom_density_cx, axis = 1) - self.n_atoms_cxed_x_before
+            self.n_molecule_diff_var[self.record_iter+1, :] = np.sum(self.buff_molecule_density, axis = 1) - self.n_molecules_x_before
+            self.n_atom_source_var[self.record_iter+1, :] = self.buff_atom_source
+            self.n_atom_cx_source_var[self.record_iter+1, :] = self.buff_atom_cx_source
+            self.n_molecule_source_var[self.record_iter+1, :] = self.buff_molecule_source"""
+            self.step_length_var[self.record_iter+1] = step_length
+        """else:
+            self.sub_comm.Reduce([self.n_atoms.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+            self.sub_comm.Reduce([self.n_atoms_cxed.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+            self.sub_comm.Reduce([self.n_molecules.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
 
-                self.sub_comm.Reduce([self.h_atoms.Sn_this_step.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([self.h_atoms.Sn_this_step_cx.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
-                self.sub_comm.Reduce([self.h_molecules.Sn_this_step.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
-            self.n_atoms.fill(0)
-            self.n_atoms_cxed.fill(0)
-            self.n_molecules.fill(0)
-            self.record_iter = self.record_iter + 1
+            self.sub_comm.Reduce([self.h_atoms.Sn_this_step.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+            self.sub_comm.Reduce([self.h_atoms.Sn_this_step_cx.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+            self.sub_comm.Reduce([self.h_molecules.Sn_this_step.astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.n_atoms.fill(0)
+        self.n_atoms_cxed.fill(0)
+        self.n_molecules.fill(0)"""
+
+    def init_speed_dists(self):
+        self.velocity_domains = 10
+        self.n_bins_atom = 2000
+        self.n_bins_mol = 200
+        self.bin_edges_atom = np.linspace(0, np.sqrt(2*350*self.domain.EV/(self.domain.d_ion_mass)), self.n_bins_atom+1)
+        self.bin_edges_mol = np.linspace(0, np.sqrt(2*15*self.domain.EV/(self.domain.d_molecule_mass)), self.n_bins_mol+1)
+        self.speed_dist_atom = np.zeros((self.velocity_domains, self.n_bins_atom))
+        self.speed_dist_atom_cx = np.zeros((self.velocity_domains, self.n_bins_atom))
+        self.speed_dist_mol = np.zeros((self.velocity_domains, self.n_bins_mol))
+
+    def get_speed_dist_atom(self):
+        s = self.h_atoms
+        for i in np.arange(self.velocity_domains):
+            larger_mask = s.x[0:s.max_ind] > (self.domain.x_min + i*(self.domain.x_max-self.domain.x_min)/self.velocity_domains)
+            smaller_mask = s.x[0:s.max_ind] < (self.domain.x_min + (i+1)*(self.domain.x_max-self.domain.x_min)/self.velocity_domains)
+            mask = (larger_mask) & (smaller_mask) & (s.active[0:s.max_ind])
+            hist, _ = np.histogram(np.sqrt(2*s.E[0:s.max_ind][mask]*self.domain.EV/(s.mass)), bins=self.bin_edges_atom, weights=s.norm_weight[0:s.max_ind][mask])
+            self.speed_dist_atom[i, :] = hist
+            mask = (mask) & (s.cxed[0:s.max_ind] == 1)
+            hist_cx, _ = np.histogram(np.sqrt(2*s.E[0:s.max_ind][mask]*self.domain.EV/(s.mass)), bins=self.bin_edges_atom, weights=s.norm_weight[0:s.max_ind][mask])
+            self.speed_dist_atom_cx[i, :] = hist_cx
+
+    def get_speed_dist_mol(self):
+        s = self.h_molecules
+        for i in np.arange(self.velocity_domains):
+            larger_mask = s.x[0:s.max_ind] > (self.domain.x_min + i*(self.domain.x_max-self.domain.x_min)/self.velocity_domains)
+            smaller_mask = s.x[0:s.max_ind] < (self.domain.x_min + (i+1)*(self.domain.x_max-self.domain.x_min)/self.velocity_domains)
+            mask = (larger_mask) & (smaller_mask) & (s.active[0:s.max_ind])
+            hist, _ = np.histogram(np.sqrt(2*s.E[0:s.max_ind][mask]*self.domain.EV/(s.mass)), bins=self.bin_edges_mol, weights=s.norm_weight[0:s.max_ind][mask])
+            self.speed_dist_mol[i, :] = hist
+
+
 
     #Loading and saving object for IO based initialization procedures
     def save_objects(self, filenames):
@@ -396,38 +457,86 @@ class Simulator():
         self.h_molecules.load_object_nc(filenames[1])
         self.domain.load_object_nc(filenames[2])
 
-    #Close the netCDF file
+    #Print the accounting of particles and energy to check the conservation. Close the netCDF file
     def finalize(self):
         if self.rank == 0:
-            """
-            self.buf_n_wall_atom = np.array([0]).astype(np.int32)
-            self.buf_norm_weight_wall_atom = np.array([0]).astype(np.float32)
-            self.buf_n_wall_mol = np.array([0]).astype(np.int32)
-            self.buf_norm_weight_wall_mol = np.array([0]).astype(np.float32)
-
-            self.sub_comm.Reduce([np.array([self.h_atoms.weights_add_wall.size]).astype(np.int32), MPI.INT], [self.buf_n_wall_atom, MPI.INT], op = MPI.SUM, root = 0)
-            self.sub_comm.Reduce([np.array([np.mean(self.h_atoms.weights_add_wall)]).astype(np.float32), MPI.FLOAT], [self.buf_norm_weight_wall_atom, MPI.FLOAT], op = MPI.SUM, root = 0)
-            self.buf_norm_weight_wall_atom /= self.procs_python
-
-            self.sub_comm.Reduce([np.array([self.h_molecules.weights_add_wall.size]).astype(np.int32), MPI.INT], [self.buf_n_wall_mol, MPI.INT], op = MPI.SUM, root = 0)
-            self.sub_comm.Reduce([np.array([np.mean(self.h_molecules.weights_add_wall)]).astype(np.float32), MPI.FLOAT], [self.buf_norm_weight_wall_mol, MPI.FLOAT], op = MPI.SUM, root = 0)
-            self.buf_norm_weight_wall_mol /= self.procs_python
-
-            print("Number of super atoms absorbed:")
-            print(self.buf_n_wall_atom)
-            print("Mean weight of super atoms absorbed:")
-            print(self.buf_norm_weight_wall_atom)
-            print("Number of super molecules absorbed:")
-            print(self.buf_n_wall_mol)
-            print("Mean weight of super molecules absorbed:")
-            print(self.buf_norm_weight_wall_mol)
-            """
-            self.nc_dat.close()
-        """
+            self.buf_reflection_loss = np.array([0]).astype(np.float32)
+            self.buf_inner_edge_loss = np.array([0]).astype(np.float32)
+            self.buf_reflection_loss_mol = np.array([0]).astype(np.float32)
+            self.buf_inner_edge_loss_mol = np.array([0]).astype(np.float32)
+            self.buf_total_source = np.array([0]).astype(np.float32)
+            self.buf_inflow = np.array([0]).astype(np.float32)
+            self.buf_weight_atoms = np.array(0).astype(np.float32)
+            self.buf_weight_molecules = np.array(0).astype(np.float32)
+            self.buf_E_init = np.array(0).astype(np.float32)
+            self.buf_E_absorb = np.array(0).astype(np.float32)
+            self.buf_E_IE = np.array(0).astype(np.float32)
+            self.buf_E_loss_ion = np.array(0).astype(np.float32)
+            self.buf_E_gain_cx = np.array(0).astype(np.float32)
+            self.buf_E_in_system = np.array(0).astype(np.float32)
         else:
-            self.sub_comm.Reduce([np.array([self.h_atoms.weights_add_wall.size]).astype(np.int32), MPI.INT], [None, MPI.INT], op = MPI.SUM, root = 0)
-            self.sub_comm.Reduce([np.array([np.mean(self.h_atoms.weights_add_wall)]).astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
+            self.buf_reflection_loss = None
+            self.buf_inner_edge_loss = None
+            self.buf_reflection_loss_mol = None
+            self.buf_inner_edge_loss_mol = None
+            self.buf_total_source = None
+            self.buf_inflow = None
+            self.buf_weight_atoms = None
+            self.buf_weight_molecules = None
+            self.buf_E_init = None
+            self.buf_E_absorb = None
+            self.buf_E_IE = None
+            self.buf_E_loss_ion = None
+            self.buf_E_gain_cx = None
+            self.buf_E_in_system = None
 
-            self.sub_comm.Reduce([np.array([self.h_molecules.weights_add_wall.size]).astype(np.int32), MPI.INT], [None, MPI.INT], op = MPI.SUM, root = 0)
-            self.sub_comm.Reduce([np.array([np.mean(self.h_molecules.weights_add_wall)]).astype(np.float32), MPI.FLOAT], [None, MPI.FLOAT], op = MPI.SUM, root = 0)
-        """
+        self.sub_comm.Reduce([np.array([self.h_atoms.reflection_loss]).astype(np.float32), MPI.FLOAT], [self.buf_reflection_loss, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([np.array([self.h_atoms.inner_edge_loss]).astype(np.float32), MPI.FLOAT], [self.buf_inner_edge_loss, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([np.array([self.h_molecules.reflection_loss]).astype(np.float32), MPI.FLOAT], [self.buf_reflection_loss_mol, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([np.array([self.h_molecules.inner_edge_loss]).astype(np.float32), MPI.FLOAT], [self.buf_inner_edge_loss_mol, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([np.array([self.domain.total_plasma_source]).astype(np.float32), MPI.FLOAT], [self.buf_total_source, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([np.array([self.h_molecules.total_inflow]).astype(np.float32), MPI.FLOAT], [self.buf_inflow, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([np.sum(self.h_atoms.norm_weight[0:self.h_atoms.max_ind][self.h_atoms.active[0:self.h_atoms.max_ind]]).astype(np.float32), MPI.FLOAT], [self.buf_weight_atoms, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([np.sum(self.h_molecules.norm_weight[0:self.h_molecules.max_ind][self.h_molecules.active[0:self.h_molecules.max_ind]]).astype(np.float32), MPI.FLOAT], [self.buf_weight_molecules, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([np.array(self.h_atoms.E_init).astype(np.float32), MPI.FLOAT], [self.buf_E_init, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([np.array(self.h_atoms.E_absorb).astype(np.float32), MPI.FLOAT], [self.buf_E_absorb, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([np.array(self.h_atoms.E_loss_IE).astype(np.float32), MPI.FLOAT], [self.buf_E_IE, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([np.array(self.h_atoms.E_cx_gain).astype(np.float32), MPI.FLOAT], [self.buf_E_gain_cx, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([np.array(self.h_atoms.E_loss_ion).astype(np.float32), MPI.FLOAT], [self.buf_E_loss_ion, MPI.FLOAT], op = MPI.SUM, root = 0)
+        self.sub_comm.Reduce([np.sum(self.h_atoms.E[0:self.h_atoms.max_ind][self.h_atoms.active[0:self.h_atoms.max_ind]]*self.h_atoms.norm_weight[0:self.h_atoms.max_ind][self.h_atoms.active[0:self.h_atoms.max_ind]]).astype(np.float32), MPI.FLOAT], [self.buf_E_in_system, MPI.FLOAT], op = MPI.SUM, root = 0)
+
+        if self.rank == 0:
+            print("Atom loss due to wall absorbtion:")
+            print(self.buf_reflection_loss)
+            print("Atom loss at inner edge:")
+            print(self.buf_inner_edge_loss)
+            print("Molecule loss due to wall absorbtion:")
+            print(self.buf_reflection_loss_mol)
+            print("Molecule loss at inner edge:")
+            print(self.buf_inner_edge_loss_mol)
+            print("Total source:")
+            print(self.buf_total_source)
+            print("Total inflow of molecules:")
+            print(self.buf_inflow)
+            print("Atoms in system:")
+            print(self.buf_weight_atoms)
+            print("Molecules in system:")
+            print(self.buf_weight_molecules)
+            print("Total ledger for particles:")
+            print(2*self.buf_inflow - self.buf_reflection_loss - self.buf_inner_edge_loss - self.buf_total_source - self.buf_weight_atoms - 2*self.buf_weight_molecules)
+            print("/******************************************************************************************/")
+            print("Initial Energy of atoms:")
+            print(self.buf_E_init)
+            print("Energy gained in cx:")
+            print(self.buf_E_gain_cx)
+            print("Energy lost from absorbtion:")
+            print(self.buf_E_absorb)
+            print("Energy lost at inner edge:")
+            print(self.buf_E_IE)
+            print("Energy transferred to plasma from ionization:")
+            print(self.buf_E_loss_ion)
+            print("Atom energy in system:")
+            print(self.buf_E_in_system)
+            print("Total Energy Ledger:")
+            print(self.buf_E_init + self.buf_E_gain_cx - self.buf_E_absorb - self.buf_E_IE - self.buf_E_loss_ion - self.buf_E_in_system)
+            self.nc_dat.close()

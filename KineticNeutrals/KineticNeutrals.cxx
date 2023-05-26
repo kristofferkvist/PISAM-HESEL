@@ -33,7 +33,7 @@ int KineticNeutrals::InitKineticNeutrals(bool restart){
     uSi.y = 0;
     uSi.z = 0;
 		//Init source fields
-		Sn = 0, Spe = 0, Sux = 0, Suz = 0, Spi = 0;
+		Sn = 0, Spe = 0, Sux = 0, Suz = 0, SEi = 0, Spi = 0;
     u0_x_ion = 0, u0_z_ion = 0;
     //uSi.setBoundary("dirichlet_o2(0.)");
     //Read oci rand rhos used for normalizing and denormalizing in PISAM
@@ -67,12 +67,12 @@ int KineticNeutrals::InitKineticNeutrals(bool restart){
 		Mpi_receive(recv_buf, Spe, 1%python_size);
     Mpi_receive(recv_buf, Sux, 2%python_size);
     Mpi_receive(recv_buf, Suz, 3%python_size);
-		Mpi_receive(recv_buf, Spi, 4%python_size);
+		Mpi_receive(recv_buf, SEi, 4%python_size);
     //Monitor fields
     //For some reason the PVODE solver fails when more than three fields are
     //monitored using only af few processors in HESEL. Hence this precaution.
     //Maybe parallel netCDF support in the netCDF installation can fix it?
-    if (app_size < 32){
+    if (app_size < 0){
       SAVE_REPEAT3(Sn,Spe,Spi);
     }
     else{
@@ -126,6 +126,8 @@ int KineticNeutrals::Rhs_calc_velocity_sources(){
   Calculate_ion_fluid_speed();
   uSi.x =  Suz/n - u0_z_ion*Sn/n;
   uSi.z = -Sux/n + u0_x_ion*Sn/n;
+  Spi = SEi - (u0_x_ion*Sux + u0_z_ion*Suz) + 1./2.*Sn*(u0_x_ion*u0_x_ion + u0_z_ion*u0_z_ion);
+  //std::cout << "###########Printing SEi mean: " << MeanField(SEi) << "    ###########Printing Spi mean: " << MeanField(Spi) << std::endl;
   //uSi.applyBoundary();
   return 0;
 }
@@ -158,7 +160,7 @@ int KineticNeutrals::RhsReceive(){
 		Mpi_receive(recv_buf, Spe, 1%python_size);
     Mpi_receive(recv_buf, Sux, 2%python_size);
     Mpi_receive(recv_buf, Suz, 3%python_size);
-		Mpi_receive(recv_buf, Spi, 4%python_size);
+		Mpi_receive(recv_buf, SEi, 4%python_size);
     Rhs_calc_velocity_sources();
   }
   return 0;
@@ -212,4 +214,16 @@ int KineticNeutrals::PrintField(Field3D f){
     }
   std::cout << "]" << std::endl;
   return 0;
+}
+
+BoutReal KineticNeutrals::MeanField(Field3D f){
+  int nx = loc_proc_nx + 2*mxg;
+  BoutReal mean = 0;
+    for (int i = 0; i < nx; i++){
+      for (int j = 0; j < loc_proc_nz; j++){
+        mean += f(i, 0, j);
+      }
+    }
+  mean /= loc_proc_nx*loc_proc_nz;
+  return mean;
 }
