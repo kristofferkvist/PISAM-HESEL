@@ -296,6 +296,7 @@ class Simulator():
         #Convergence parameters - just play with them and ajust after your needs.
         self.transient_step_lengths = np.array([50, 10, 1])
         self.convergence_thresholds = np.array([0.05, 0.01, 0.01])
+        self.abs_thresholds = np.array([100, 50, 50])
         self.convergence_max_counts = np.array([3, 5, 10])
         loop_size = 100
         self.species_list = [self.h_molecules, self.h_atoms]
@@ -316,8 +317,15 @@ class Simulator():
                 """if self.rank == 0:
                     print("N molecules = " + str(N_molecules_new))
                     print("N atoms = " + str(N_atoms_new))"""
-                if (N_molecules_old > 0 and N_atoms_old > 0) and ((np.abs(N_molecules_old-N_molecules_new)/N_molecules_old < self.convergence_thresholds[i]) and (np.abs(N_atoms_old-N_atoms_new)/N_atoms_old < 4*self.convergence_thresholds[i])):
-                    convergence_count = convergence_count + 1
+                if (N_molecules_old > 0 and N_atoms_old > 0):
+                    abs_diff_atom = np.abs(N_atoms_old-N_atoms_new)
+                    abs_diff_mol = np.abs(N_molecules_old-N_molecules_new)
+                    rel_dif_atom = abs_diff_atom/N_atoms_old
+                    rel_dif_mol = abs_diff_mol/N_molecules_old
+                    atom_condition = (abs_diff_atom < self.abs_thresholds[i] or rel_dif_atom < self.convergence_thresholds[i])
+                    mol_condition = (abs_diff_mol < self.abs_thresholds[i] or rel_dif_mol < self.convergence_thresholds[i])
+                    if (atom_condition and mol_condition):
+                        convergence_count = convergence_count + 1
                 else:
                     convergence_count = 0
 
