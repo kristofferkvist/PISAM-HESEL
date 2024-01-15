@@ -1,4 +1,14 @@
 """
+@Kristoffer Kvist (Orcid ID: 0009-0006-4494-7281)
+The code of this document is developed and written by Kristoffer Kvist affiliated
+to the physics department of the Technical University of Denmark. The content of the
+code can be applied by any third party, given that article "A direct Monte Carlo
+approach for the modeling of neutrals at the plasma edge and its self-consistent
+coupling with the 2D fluid plasma edge turbulence model HESEL" published in
+"Physics of Plasmas" in 2024 is cited accordingly.
+"""
+
+"""
 The species class holds the minimal attributes required for each type of
 particle added to the system e.g. mass, inflow rate, inflow temperature, etc.
 Furthermore, it stores the positions, velocities, and surrounding temperatures
@@ -276,8 +286,9 @@ class Species():
             x_from_wall = self.domain.x_max - self.x[0:self.max_ind] + self.domain.x_max_wall_dist_poloidal
             #y_lim = np.zeros(self.max_ind)
             self.wall_lim[0:self.max_ind] = np.sqrt(2*self.domain.r_minor*x_from_wall - np.power(x_from_wall, 2))
-            outer_wall_mask = (self.active[0:self.max_ind]) & (np.logical_or(self.true_y[0:self.max_ind] > self.wall_lim[0:self.max_ind], self.true_y[0:self.max_ind] < -self.wall_lim[0:self.max_ind])) & (self.vx[0:self.max_ind] < 0)
-            #mask = outer_wall_mask & reflected_mask
+            outer_wall_mask = (self.active[0:self.max_ind]) & (np.abs(self.true_y[0:self.max_ind] - self.born_y[0:self.max_ind]) > self.wall_lim[0:self.max_ind]) & (self.vx[0:self.max_ind] < 0)
+            mask = outer_wall_mask & reflected_mask
+            self.bounce(mask)
             #self.bounce_y(mask, x_from_wall, self.wall_lim[0:self.max_ind])
             mask = outer_wall_mask & (reflected_mask != True)
             self.absorb(mask)
@@ -285,7 +296,8 @@ class Species():
             #Thn the toroidal direction
             self.wall_lim[0:self.max_ind] = np.sqrt(2*self.domain.r_minor*x_from_wall - np.power(x_from_wall, 2))
             outer_wall_mask = (self.active[0:self.max_ind]) & (np.logical_or(self.z[0:self.max_ind] > self.wall_lim[0:self.max_ind], self.z[0:self.max_ind] < -self.wall_lim[0:self.max_ind])) & (self.vx[0:self.max_ind] < 0)
-            #mask = outer_wall_mask & reflected_mask
+            mask = outer_wall_mask & reflected_mask
+            self.z[0:self.max_ind][mask] = 0
             #self.bounce_z(mask, x_from_wall, self.wall_lim[0:self.max_ind])
             mask = outer_wall_mask & (reflected_mask != True)
             self.absorb(mask)
@@ -352,6 +364,14 @@ class Species():
         self.vx[0:self.max_ind][absorbed] = self.initialize_vx(n_absorbed, self.domain.T_wall)
         self.vy[0:self.max_ind][absorbed] = self.initialize_vyz(n_absorbed, self.domain.T_wall)
         self.vz[0:self.max_ind][absorbed] = self.initialize_vyz(n_absorbed, self.domain.T_wall)
+
+    def bounce(self, bounced):
+        n_bounced = np.sum(bounced)
+        #new_y = self.initialize_y(n_bounced)
+        #self.y[0:self.max_ind][bounced] = new_y
+        #self.true_y[0:self.max_ind][bounced] = new_y
+        self.y[0:self.max_ind][bounced] = self.born_y[0:self.max_ind][bounced]
+        self.true_y[0:self.max_ind][bounced] = self.born_y[0:self.max_ind][bounced]
 
     #Removes particles when they escape the domain or react to create new particles
     def remove(self, removed):

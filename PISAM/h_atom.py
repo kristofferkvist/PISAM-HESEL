@@ -1,4 +1,14 @@
 """
+@Kristoffer Kvist (Orcid ID: 0009-0006-4494-7281)
+The code of this document is developed and written by Kristoffer Kvist affiliated
+to the physics department of the Technical University of Denmark. The content of the
+code can be applied by any third party, given that article "A direct Monte Carlo
+approach for the modeling of neutrals at the plasma edge and its self-consistent
+coupling with the 2D fluid plasma edge turbulence model HESEL" published in
+"Physics of Plasmas" in 2024 is cited accordingly.
+"""
+
+"""
 A subclass of species implementing all the reactions specific for hydrogen/deuterium atoms.
 This includes calculation of reactions rates, calculation of sources for reactions
 that include atoms, and the changes to the atom superparticle velocity and/or weight
